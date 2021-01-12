@@ -9,14 +9,14 @@ class TransformVariants:
         """ Init method. """
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
-        
+
     def get_variants(self, samples):
+        encoded_samples = list()
         for sample in samples:
             positions = list()
             variants = list()
             print(sample)
             l_variants = samples[sample]
-            #print(l_variants)
             '''for item in l_variants:
                 pos = list(item.keys())[0]
                 var = list(item.values())[0]
@@ -25,20 +25,20 @@ class TransformVariants:
                 else:
                     variants_freq[var] += 1
             print(variants_freq)'''
-            #print("=====================")
             transformed_variants = self.transform_variants(l_variants)
-    
+            encoded_samples.append(transformed_variants)
+        return encoded_samples 
+
     def string_to_array(self, my_string):
         my_string = my_string.lower()
         my_string = re.sub('[^acgt]', 'z', my_string)
         my_array = np.array(list(my_string))
         return my_array  
-            
+
     def encode_nucleotides(self, seq, encoded_AGCT=[0.25, 0.5, 0.75, 1.0]):
-        #test_sequence = 'AACGCGCTTNN'
         encoded_seq = self.ordinal_encoder(self.string_to_array(seq))
         return encoded_seq
-            
+
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
         float_encoded = integer_encoded.astype(float)
@@ -51,27 +51,19 @@ class TransformVariants:
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
         print(variants)
-        encoded_var = np.zeros((len(variants), n_features))
+        encoded_sample = np.zeros((len(variants), max_len_ref+max_len_alt+1))
         for index, item in enumerate(variants):
-            print(item)
             pos = list(item.keys())[0]
             var = list(item.values())[0]
-            encoded_var[index, 0:1] = [pos]
+            encoded_sample[index, 0:1] = [pos]
             ref_var = var.split(">")
             ref, alt_1 = ref_var[0], ref_var[1]
-            #print(encoded_var)
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
-                print(ref)
-                print(alt_1)
                 encoded_ref = self.encode_nucleotides(ref, max_len_ref)
                 encoded_alt = self.encode_nucleotides(alt_1, max_len_alt)
-                print(encoded_ref)
-                print(encoded_alt)
                 n_e_ref = np.concatenate((encoded_ref, np.zeros(max_len_ref - len(encoded_ref))), axis=None)
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
-                print(n_e_ref)
-                print(n_e_alt)
-            break
-        print("=====================")
-    
-        
+                encoded_sample[index, 1:max_len_ref + 1] = n_e_ref
+                encoded_sample[index, max_len_ref + 1:max_len_ref + 1 + max_len_alt] = n_e_alt
+        print(encoded_sample)
+        return encoded_sample
