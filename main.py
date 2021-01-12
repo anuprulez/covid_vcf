@@ -20,7 +20,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=10):
         file_path = file_names[idx]
         file_name = file_path.split('/')[-1]
         df = allel.vcf_to_dataframe(file_path)
-        print(df)
+        #print(df)
         samples[file_name] = list()
         try:
             for idx, i in enumerate(df["POS"].tolist()):
