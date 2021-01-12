@@ -48,9 +48,7 @@ class TransformVariants:
         float_encoded[float_encoded == 3] = 1.00 # T
         float_encoded[float_encoded == 4] = 0.00 # anything else, z
         return float_encoded
-    
-    
-    
+
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
         print(variants)
         encoded_var = np.zeros((len(variants), n_features))
