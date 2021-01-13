@@ -59,11 +59,11 @@ class Autoencoder(tf.keras.Model):
         reconstructed = self.decoder(code)
         return reconstructed
 
-    def loss(model, original):
+    def loss(self, model, original):
         reconstruction_error = tf.reduce_mean(tf.square(tf.subtract(model(original), original)))
         return reconstruction_error
 
-    def train(loss, model, opt, original):
+    def train(self, loss, model, opt, original):
         with tf.GradientTape() as tape:
             gradients = tape.gradient(loss(model, original), model.trainable_variables)
             gradient_variables = zip(gradients, model.trainable_variables)

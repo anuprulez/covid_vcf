@@ -15,7 +15,7 @@ class TransformVariants:
         for sample in samples:
             positions = list()
             variants = list()
-            print(sample)
+            #print(sample)
             l_variants = samples[sample]
             '''for item in l_variants:
                 pos = list(item.keys())[0]
@@ -50,7 +50,7 @@ class TransformVariants:
         return float_encoded
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
-        print(variants)
+        #print(variants)
         encoded_sample = np.zeros((len(variants), max_len_ref+max_len_alt+1))
         for index, item in enumerate(variants):
             pos = list(item.keys())[0]
@@ -65,5 +65,5 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 encoded_sample[index, 1:max_len_ref + 1] = n_e_ref
                 encoded_sample[index, max_len_ref + 1:max_len_ref + 1 + max_len_alt] = n_e_alt
-        print(encoded_sample)
+        #print(encoded_sample)
         return encoded_sample

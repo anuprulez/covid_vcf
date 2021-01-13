@@ -8,12 +8,14 @@ import random
 from matplotlib import pyplot as plt
 import seaborn as sns
 import pandas as pd
+import tensorflow as tf
+import numpy as np
 
 import transform_variants
 import setup_network
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=10):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=20):
     file_names = glob.glob(path)
     random.shuffle(file_names)
     samples = dict()
@@ -51,17 +53,23 @@ def split_format_variants(samples, tr_test_split=0.2):
     print("Test data...")
     te_transformed_samples = tf_variants.get_variants(test_data)
     print(len(te_transformed_samples))
+    return tr_transformed_samples, te_transformed_samples
     
+def train_autoencoder(train_data, test_data, batch_size=4, learning_rate=1e-4, epochs=5):
+
+    autoencoder = setup_network.Autoencoder(intermediate_dim=64, original_dim=784)
+    opt = tf.optimizers.Adam(learning_rate=learning_rate)
+
+    training_features = np.asarray(train_data)[0]
+    test_features = np.asarray(test_data)[0]
     
-def train_autoencoder(train_data, test_data):
+    print(training_features)
+    print(training_features.shape)
 
-    autoencoder = Autoencoder(intermediate_dim=64, original_dim=784)
-    '''opt = tf.optimizers.Adam(learning_rate=learning_rate)
+    #(training_features, _), (test_features, _) = tf.keras.datasets.mnist.load_data()
+    #training_features = training_features / np.max(training_features)
+    #training_features = training_features.reshape(training_features.shape[0], training_features.shape[1] * training_features.shape[2])
 
-    (training_features, _), (test_features, _) = tf.keras.datasets.mnist.load_data()
-    training_features = training_features / np.max(training_features)
-    training_features = training_features.reshape(training_features.shape[0],
-                                              training_features.shape[1] * training_features.shape[2])
     training_features = training_features.astype('float32')
     training_dataset = tf.data.Dataset.from_tensor_slices(training_features)
     training_dataset = training_dataset.batch(batch_size)
@@ -74,13 +82,13 @@ def train_autoencoder(train_data, test_data):
         with tf.summary.record_if(True):
             for epoch in range(epochs):
                 for step, batch_features in enumerate(training_dataset):
-                    train(loss, autoencoder, opt, batch_features)
-                    loss_values = loss(autoencoder, batch_features)
+                    autoencoder.train(autoencoder.loss, autoencoder, opt, batch_features)
+                    loss_values = autoencoder.loss(autoencoder, batch_features)
                     original = tf.reshape(batch_features, (batch_features.shape[0], 28, 28, 1))
                     reconstructed = tf.reshape(autoencoder(tf.constant(batch_features)), (batch_features.shape[0], 28, 28, 1))
                     tf.summary.scalar('loss', loss_values, step=step)
                     tf.summary.image('original', original, max_outputs=10, step=step)
-                    tf.summary.image('reconstructed', reconstructed, max_outputs=10, step=step)'''
+                    tf.summary.image('reconstructed', reconstructed, max_outputs=10, step=step)
 
 
 
@@ -88,5 +96,6 @@ if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
     tr_data, te_data = split_format_variants(samples)
+    train_autoencoder(tr_data, te_data)
     end_time = time.time()
     print("Program finished in {} seconds".format(str(end_time - start_time)))
