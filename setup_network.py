@@ -19,18 +19,21 @@ class Encoder(tf.keras.layers.Layer):
         self.hidden_layer1 = tf.keras.layers.Dense(
             units=f_h,
             activation=tf.nn.relu,
-            kernel_initializer='he_uniform'
         )
         
         self.hidden_layer2 = tf.keras.layers.Dense(
             units=s_h,
             activation=tf.nn.relu,
-            kernel_initializer='he_uniform'
         )
         
         self.output_layer = tf.keras.layers.Dense(
             units=intermediate_dim,
-            activation=tf.nn.sigmoid
+            activation=tf.nn.relu
+        )
+
+        self.output_layer = tf.keras.layers.Dense(
+            units=intermediate_dim,
+            activation=tf.nn.relu
         )
 
     def call(self, input_features):
@@ -46,19 +49,23 @@ class Decoder(tf.keras.layers.Layer):
         self.hidden_layer1 = tf.keras.layers.Dense(
             units=f_h,
             activation=tf.nn.relu,
-            kernel_initializer='he_uniform'
         )
         
         self.hidden_layer2 = tf.keras.layers.Dense(
             units=s_h,
             activation=tf.nn.relu,
-            kernel_initializer='he_uniform'
         )
+        
         self.output_layer = tf.keras.layers.Dense(
             units=original_dim,
-            activation=tf.nn.sigmoid
+            activation=tf.nn.relu
         )
-  
+
+        self.output_layer = tf.keras.layers.Dense(
+            units=original_dim,
+            activation=tf.nn.relu
+        )
+
     def call(self, encoded):
         a_f_h = self.hidden_layer1(encoded)
         a_s_h = self.hidden_layer2(a_f_h)
@@ -76,12 +83,23 @@ class Autoencoder(tf.keras.Model):
         reconstructed = self.decoder(code)
         return reconstructed
 
-    def loss(self, model, original):
+    '''def loss(self, model, original):
         reconstruction_error = tf.reduce_mean(tf.square(tf.subtract(model(original), original)))
-        return reconstruction_error
+        return reconstruction_error'''
+        
+    def loss(self, x, x_bar):
+       return tf.losses.mean_squared_error(x, x_bar)
 
-    def train(self, loss, model, opt, original):
+    def grad(self, model, inputs):
+        with tf.GradientTape() as tape:
+            reconstruction = model(inputs)
+            loss_value = self.loss(inputs, reconstruction)
+        return loss_value, tape.gradient(loss_value, model.trainable_variables), reconstruction
+
+    '''def train(self, loss, model, opt, original):
         with tf.GradientTape() as tape:
             gradients = tape.gradient(loss(model, original), model.trainable_variables)
             gradient_variables = zip(gradients, model.trainable_variables)
-            opt.apply_gradients(gradient_variables)
+            opt.apply_gradients(gradient_variables)'''
+            
+            

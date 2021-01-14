@@ -51,7 +51,7 @@ class TransformVariants:
         for index, item in enumerate(variants):
             pos = list(item.keys())[0]
             var = list(item.values())[0]
-            encoded_sample[index, 0:1] = [pos]
+            #encoded_sample[index, 0:1] = [pos]
             ref_var = var.split(">")
             ref, alt_1 = ref_var[0], ref_var[1]
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
@@ -59,6 +59,6 @@ class TransformVariants:
                 encoded_alt = self.encode_nucleotides(alt_1, max_len_alt)
                 n_e_ref = np.concatenate((encoded_ref, np.zeros(max_len_ref - len(encoded_ref))), axis=None)
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
-                encoded_sample[index, 1:max_len_ref + 1] = n_e_ref
-                encoded_sample[index, max_len_ref + 1:max_len_ref + 1 + max_len_alt] = n_e_alt
+                encoded_sample[index, 0:max_len_ref] = n_e_ref
+                encoded_sample[index, max_len_ref:max_len_ref + max_len_alt] = n_e_alt
         return encoded_sample

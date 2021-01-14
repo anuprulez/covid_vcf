@@ -15,8 +15,12 @@ import transform_variants
 import setup_network
 
 
+SEED = 32000
+
+
 def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=100):
     file_names = glob.glob(path)
+    random.seed(SEED)
     random.shuffle(file_names)
     samples = dict()
     print("Preparing variants...")
@@ -28,7 +32,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=100):
         try:
             for idx, i in enumerate(df["POS"].tolist()):
                 variant = dict()
-                variant[i] = "{}>{}".format(df["REF"][idx], df["ALT_1"][idx]) #(df["REF"][idx], df["ALT_1"][idx])
+                variant[i] = "{}>{}".format(df["REF"][idx], df["ALT_1"][idx])
                 samples[file_name].append(variant)
         except Exception as ex:
             continue
@@ -50,16 +54,13 @@ def split_format_variants(samples, tr_test_split=0.2):
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
     tr_transformed_samples = tf_variants.get_variants(train_data)
-    print(len(tr_transformed_samples))
     print("Test data...")
     te_transformed_samples = tf_variants.get_variants(test_data)
-    print(len(te_transformed_samples))
     return tr_transformed_samples, te_transformed_samples
     
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-4, epochs=2):
-
-    autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=16)
-    opt = tf.optimizers.Adam(learning_rate=learning_rate)
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=50):
+    
+    #opt = tf.optimizers.Adam(learning_rate=learning_rate)
 
     training_features = np.asarray(train_data)
     
@@ -77,25 +78,29 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-4, 
 
     writer = tf.summary.create_file_writer('tmp')
 
-    epo_loss = np.zeros((epochs, 1))
+    epo_loss = np.zeros((num_epochs, 1))
 
     print("Start training...")
-
-    with writer.as_default():
-        with tf.summary.record_if(True):
-            for epoch in range(epochs):
-                loss = 0.0
-                for step, batch_features in enumerate(training_dataset):
-                    autoencoder.train(autoencoder.loss, autoencoder, opt, batch_features)
-                    loss_values = autoencoder.loss(autoencoder, batch_features)
-                    original = batch_features
-                    reconstructed = autoencoder(tf.constant(batch_features))
-                    current_loss = loss_values.numpy()
-                    loss += current_loss
-                mean_loss = loss / batch_size
-                epo_loss[epoch] = mean_loss
-                print("Epoch {} training loss: {}".format(epoch + 1, str(mean_loss)))
-
+    
+    dim = training_features.shape[1]
+    
+    autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=dim)
+    optimizer = tf.optimizers.Adam(learning_rate=0.001)
+    global_step = tf.Variable(0)
+    
+    for epoch in range(num_epochs):
+        loss = 0.0
+        for x in range(0, len(training_features), batch_size):
+            x_inp = training_features[x : x + batch_size]
+            loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
+            optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
+            current_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
+            loss += current_loss
+        mean_loss = loss / batch_size
+        epo_loss[epoch] = mean_loss
+        print("Epoch {} training loss: {}".format(epoch + 1, str(mean_loss)))
+        #if global_step.numpy() % 10 == 0:
+            #print("Step: {}, Loss: {}".format(global_step.numpy(), autoencoder.loss(x_inp, reconstruction).numpy()))
 
 if __name__ == "__main__":
     start_time = time.time()
