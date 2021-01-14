@@ -13,21 +13,17 @@ class TransformVariants:
     def get_variants(self, samples):
         print("Transforming variants...")
         encoded_samples = list()
-        for sample in samples:
+        num_v_sample = list()
+        for s_idx, sample in enumerate(samples):
             positions = list()
             variants = list()
             l_variants = samples[sample]
-            '''for item in l_variants:
-                pos = list(item.keys())[0]
-                var = list(item.values())[0]
-                if var not in variants_freq:
-                    variants_freq[var] = 1
-                else:
-                    variants_freq[var] += 1
-            print(variants_freq)'''
             transformed_variants = self.transform_variants(l_variants)
-            encoded_samples.append(transformed_variants)
-        return encoded_samples 
+            encoded_samples.extend(transformed_variants)
+            num_v_sample.append(transformed_variants.shape[0])
+        assert np.sum(num_v_sample) == len(encoded_samples)
+        print("Num transformed rows for {} samples: {}".format(str(s_idx+1), str(len(encoded_samples))))
+        return encoded_samples
 
     def string_to_array(self, my_string):
         my_string = my_string.lower()
@@ -46,7 +42,7 @@ class TransformVariants:
         float_encoded[float_encoded == 1] = 0.50 # C
         float_encoded[float_encoded == 2] = 0.75 # G
         float_encoded[float_encoded == 3] = 1.00 # T
-        float_encoded[float_encoded == 4] = 0.00 # anything else, z
+        float_encoded[float_encoded == 4] = 0.00 # anything else
         return float_encoded
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
@@ -65,5 +61,4 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 encoded_sample[index, 1:max_len_ref + 1] = n_e_ref
                 encoded_sample[index, max_len_ref + 1:max_len_ref + 1 + max_len_alt] = n_e_alt
-        #print(encoded_sample)
         return encoded_sample

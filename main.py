@@ -15,7 +15,7 @@ import transform_variants
 import setup_network
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=1000):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=100):
     file_names = glob.glob(path)
     random.shuffle(file_names)
     samples = dict()
@@ -56,15 +56,18 @@ def split_format_variants(samples, tr_test_split=0.2):
     print(len(te_transformed_samples))
     return tr_transformed_samples, te_transformed_samples
     
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-2, epochs=10):
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-4, epochs=2):
 
     autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=16)
     opt = tf.optimizers.Adam(learning_rate=learning_rate)
 
-    training_features = np.asarray(train_data)[0]
-    test_features = np.asarray(test_data)[0]
-
+    training_features = np.asarray(train_data)
+    
     print(training_features.shape)
+    
+    test_features = np.asarray(test_data)
+
+    print(test_features.shape)
 
     training_features = training_features.astype('float32')
     training_dataset = tf.data.Dataset.from_tensor_slices(training_features)
@@ -83,14 +86,11 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-2, 
             for epoch in range(epochs):
                 loss = 0.0
                 for step, batch_features in enumerate(training_dataset):
-                    print(batch_features)
                     autoencoder.train(autoencoder.loss, autoencoder, opt, batch_features)
                     loss_values = autoencoder.loss(autoencoder, batch_features)
-                    original = batch_features #tf.reshape(batch_features, (batch_features.shape[0], 1))
-                    #reconstructed = tf.reshape(autoencoder(tf.constant(batch_features)), (batch_features.shape[0], 1))
+                    original = batch_features
                     reconstructed = autoencoder(tf.constant(batch_features))
                     current_loss = loss_values.numpy()
-                    #print(current_loss)
                     loss += current_loss
                 mean_loss = loss / batch_size
                 epo_loss[epoch] = mean_loss
