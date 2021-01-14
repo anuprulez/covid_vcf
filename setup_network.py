@@ -13,28 +13,44 @@ import time
 
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim):
+    def __init__(self, intermediate_dim, f_h=8, s_h=4):
         super(Encoder, self).__init__()
-        self.hidden_layer = tf.keras.layers.Dense(
-            units=intermediate_dim,
+        
+        self.hidden_layer1 = tf.keras.layers.Dense(
+            units=f_h,
             activation=tf.nn.relu,
             kernel_initializer='he_uniform'
         )
+        
+        self.hidden_layer2 = tf.keras.layers.Dense(
+            units=s_h,
+            activation=tf.nn.relu,
+            kernel_initializer='he_uniform'
+        )
+        
         self.output_layer = tf.keras.layers.Dense(
             units=intermediate_dim,
             activation=tf.nn.sigmoid
         )
 
     def call(self, input_features):
-        activation = self.hidden_layer(input_features)
-        return self.output_layer(activation)
-    
-  
+        a_f_h = self.hidden_layer1(input_features)
+        a_s_h = self.hidden_layer2(a_f_h)
+        return self.output_layer(a_s_h)
+
+
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim, original_dim):
+    def __init__(self, intermediate_dim, original_dim, f_h=4, s_h=8):
         super(Decoder, self).__init__()
-        self.hidden_layer = tf.keras.layers.Dense(
-            units=intermediate_dim,
+        
+        self.hidden_layer1 = tf.keras.layers.Dense(
+            units=f_h,
+            activation=tf.nn.relu,
+            kernel_initializer='he_uniform'
+        )
+        
+        self.hidden_layer2 = tf.keras.layers.Dense(
+            units=s_h,
             activation=tf.nn.relu,
             kernel_initializer='he_uniform'
         )
@@ -43,9 +59,10 @@ class Decoder(tf.keras.layers.Layer):
             activation=tf.nn.sigmoid
         )
   
-    def call(self, code):
-        activation = self.hidden_layer(code)
-        return self.output_layer(activation)
+    def call(self, encoded):
+        a_f_h = self.hidden_layer1(encoded)
+        a_s_h = self.hidden_layer2(a_f_h)
+        return self.output_layer(a_s_h)
 
 
 class Autoencoder(tf.keras.Model):

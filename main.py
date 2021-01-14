@@ -15,10 +15,11 @@ import transform_variants
 import setup_network
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=20):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=1000):
     file_names = glob.glob(path)
     random.shuffle(file_names)
     samples = dict()
+    print("Preparing variants...")
     for idx in range(n_max_file):
         file_path = file_names[idx]
         file_name = file_path.split('/')[-1]
@@ -55,20 +56,15 @@ def split_format_variants(samples, tr_test_split=0.2):
     print(len(te_transformed_samples))
     return tr_transformed_samples, te_transformed_samples
     
-def train_autoencoder(train_data, test_data, batch_size=4, learning_rate=1e-4, epochs=5):
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-2, epochs=10):
 
-    autoencoder = setup_network.Autoencoder(intermediate_dim=64, original_dim=784)
+    autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=16)
     opt = tf.optimizers.Adam(learning_rate=learning_rate)
 
     training_features = np.asarray(train_data)[0]
     test_features = np.asarray(test_data)[0]
-    
-    print(training_features)
-    print(training_features.shape)
 
-    #(training_features, _), (test_features, _) = tf.keras.datasets.mnist.load_data()
-    #training_features = training_features / np.max(training_features)
-    #training_features = training_features.reshape(training_features.shape[0], training_features.shape[1] * training_features.shape[2])
+    print(training_features.shape)
 
     training_features = training_features.astype('float32')
     training_dataset = tf.data.Dataset.from_tensor_slices(training_features)
@@ -78,18 +74,27 @@ def train_autoencoder(train_data, test_data, batch_size=4, learning_rate=1e-4, e
 
     writer = tf.summary.create_file_writer('tmp')
 
+    epo_loss = np.zeros((epochs, 1))
+
+    print("Start training...")
+
     with writer.as_default():
         with tf.summary.record_if(True):
             for epoch in range(epochs):
+                loss = 0.0
                 for step, batch_features in enumerate(training_dataset):
+                    print(batch_features)
                     autoencoder.train(autoencoder.loss, autoencoder, opt, batch_features)
                     loss_values = autoencoder.loss(autoencoder, batch_features)
-                    original = tf.reshape(batch_features, (batch_features.shape[0], 28, 28, 1))
-                    reconstructed = tf.reshape(autoencoder(tf.constant(batch_features)), (batch_features.shape[0], 28, 28, 1))
-                    tf.summary.scalar('loss', loss_values, step=step)
-                    tf.summary.image('original', original, max_outputs=10, step=step)
-                    tf.summary.image('reconstructed', reconstructed, max_outputs=10, step=step)
-
+                    original = batch_features #tf.reshape(batch_features, (batch_features.shape[0], 1))
+                    #reconstructed = tf.reshape(autoencoder(tf.constant(batch_features)), (batch_features.shape[0], 1))
+                    reconstructed = autoencoder(tf.constant(batch_features))
+                    current_loss = loss_values.numpy()
+                    #print(current_loss)
+                    loss += current_loss
+                mean_loss = loss / batch_size
+                epo_loss[epoch] = mean_loss
+                print("Epoch {} training loss: {}".format(epoch + 1, str(mean_loss)))
 
 
 if __name__ == "__main__":

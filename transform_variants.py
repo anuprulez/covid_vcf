@@ -11,11 +11,11 @@ class TransformVariants:
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
 
     def get_variants(self, samples):
+        print("Transforming variants...")
         encoded_samples = list()
         for sample in samples:
             positions = list()
             variants = list()
-            #print(sample)
             l_variants = samples[sample]
             '''for item in l_variants:
                 pos = list(item.keys())[0]
