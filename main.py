@@ -58,9 +58,7 @@ def split_format_variants(samples, tr_test_split=0.2):
     te_transformed_samples = tf_variants.get_variants(test_data)
     return tr_transformed_samples, te_transformed_samples
     
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=50):
-    
-    #opt = tf.optimizers.Adam(learning_rate=learning_rate)
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=20):
 
     training_features = np.asarray(train_data)
     
@@ -71,34 +69,37 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
     print(test_features.shape)
 
     training_features = training_features.astype('float32')
-    training_dataset = tf.data.Dataset.from_tensor_slices(training_features)
-    training_dataset = training_dataset.batch(batch_size)
-    training_dataset = training_dataset.shuffle(training_features.shape[0])
-    training_dataset = training_dataset.prefetch(batch_size * 4)
 
-    writer = tf.summary.create_file_writer('tmp')
+    test_features = test_features.astype('float32')
 
-    epo_loss = np.zeros((num_epochs, 1))
+    tr_epo_loss = np.zeros((num_epochs, 1))
+    te_epo_loss = np.zeros((num_epochs, 1))
 
     print("Start training...")
-    
+
     dim = training_features.shape[1]
-    
+
     autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=dim)
     optimizer = tf.optimizers.Adam(learning_rate=0.001)
     global_step = tf.Variable(0)
-    
+
     for epoch in range(num_epochs):
-        loss = 0.0
+        tr_loss = 0.0
+        te_loss = 0.0
         for x in range(0, len(training_features), batch_size):
             x_inp = training_features[x : x + batch_size]
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
-            current_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
-            loss += current_loss
-        mean_loss = loss / batch_size
-        epo_loss[epoch] = mean_loss
-        print("Epoch {} training loss: {}".format(epoch + 1, str(mean_loss)))
+            c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
+            c_te_loss = np.mean(autoencoder.loss(test_features, autoencoder(test_features)).numpy())
+            tr_loss += c_tr_loss
+            te_loss += c_te_loss
+        mean_tr_loss = tr_loss / batch_size
+        mean_te_loss = te_loss / batch_size
+        tr_epo_loss[epoch] = mean_tr_loss
+        te_epo_loss[epoch] = mean_te_loss
+        print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
+        print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
         #if global_step.numpy() % 10 == 0:
             #print("Step: {}, Loss: {}".format(global_step.numpy(), autoencoder.loss(x_inp, reconstruction).numpy()))
 
