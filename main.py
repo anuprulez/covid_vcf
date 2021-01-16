@@ -13,12 +13,13 @@ import numpy as np
 
 import transform_variants
 import setup_network
+import post_processing
 
 
 SEED = 32000
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=100):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=10):
     file_names = glob.glob(path)
     random.seed(SEED)
     random.shuffle(file_names)
@@ -38,7 +39,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=100):
             continue
     return samples
 
-            
+
 def split_format_variants(samples, tr_test_split=0.2):
 
     s_names = list()
@@ -49,16 +50,20 @@ def split_format_variants(samples, tr_test_split=0.2):
     test_data = dict(list(samples.items())[:split_int])
 
     assert len(train_data) == len(samples) - split_int
+
     assert len(test_data) == split_int
-    
+
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
-    tr_transformed_samples = tf_variants.get_variants(train_data)
+
+    tr_transformed_samples = tf_variants.get_variants(train_data, "train")
     print("Test data...")
-    te_transformed_samples = tf_variants.get_variants(test_data)
+
+    te_transformed_samples = tf_variants.get_variants(test_data, "test")
     return tr_transformed_samples, te_transformed_samples
-    
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=20):
+
+
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=10):
 
     training_features = np.asarray(train_data)
     
@@ -100,8 +105,12 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
         te_epo_loss[epoch] = mean_te_loss
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
-        #if global_step.numpy() % 10 == 0:
-            #print("Step: {}, Loss: {}".format(global_step.numpy(), autoencoder.loss(x_inp, reconstruction).numpy()))
+    low_dim_test_predictions = autoencoder.encoder(test_features)
+    print(low_dim_test_predictions.shape)
+    post_processing.transform_predictions(low_dim_test_predictions)
+    #if global_step.numpy() % 10 == 0:
+    #print("Step: {}, Loss: {}".format(global_step.numpy(), autoencoder.loss(x_inp, reconstruction).numpy()))
+
 
 if __name__ == "__main__":
     start_time = time.time()

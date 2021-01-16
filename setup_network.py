@@ -94,12 +94,4 @@ class Autoencoder(tf.keras.Model):
         with tf.GradientTape() as tape:
             reconstruction = model(inputs)
             loss_value = self.loss(inputs, reconstruction)
-        return loss_value, tape.gradient(loss_value, model.trainable_variables), reconstruction
-
-    '''def train(self, loss, model, opt, original):
-        with tf.GradientTape() as tape:
-            gradients = tape.gradient(loss(model, original), model.trainable_variables)
-            gradient_variables = zip(gradients, model.trainable_variables)
-            opt.apply_gradients(gradient_variables)'''
-            
-            
+        return loss_value, tape.gradient(loss_value, model.trainable_variables), reconstruction           

@@ -1,7 +1,10 @@
+import json
 import numpy as np
 import re
 from sklearn.preprocessing import LabelEncoder
 
+
+N_SEQ_ENCODER = [0.25, 0.5, 0.75, 1.0]
 
 class TransformVariants:
 
@@ -10,28 +13,38 @@ class TransformVariants:
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
 
-    def get_variants(self, samples):
+    def save_as_json(self, data, typ):
+        with open("data/{}_n_variants.json".format(typ), 'w') as fp:
+            json.dump(data, fp)
+
+    def get_variants(self, samples, typ):
         print("Transforming variants...")
+        sample_n_variants = list()
         encoded_samples = list()
         num_v_sample = list()
         for s_idx, sample in enumerate(samples):
             positions = list()
             variants = list()
+            variants = dict()
             l_variants = samples[sample]
             transformed_variants = self.transform_variants(l_variants)
             encoded_samples.extend(transformed_variants)
+            variants[sample] = len(transformed_variants)
+            print(sample)
+            sample_n_variants.append(variants)
             num_v_sample.append(transformed_variants.shape[0])
         assert np.sum(num_v_sample) == len(encoded_samples)
-        print("Num transformed rows for {} samples: {}".format(str(s_idx+1), str(len(encoded_samples))))
+        print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
+        self.save_as_json(sample_n_variants, typ)
         return encoded_samples
 
-    def string_to_array(self, my_string):
-        my_string = my_string.lower()
-        my_string = re.sub('[^acgt]', 'z', my_string)
-        my_array = np.array(list(my_string))
-        return my_array  
+    def string_to_array(self, n_seq):
+        n_seq = n_seq.lower()
+        n_seq = re.sub('[^acgt]', 'z', n_seq)
+        n_seq_arr = np.array(list(n_seq))
+        return n_seq_arr  
 
-    def encode_nucleotides(self, seq, encoded_AGCT=[0.25, 0.5, 0.75, 1.0]):
+    def encode_nucleotides(self, seq, encoded_AGCT=N_SEQ_ENCODER):
         encoded_seq = self.ordinal_encoder(self.string_to_array(seq))
         return encoded_seq
 
@@ -46,8 +59,7 @@ class TransformVariants:
         return float_encoded
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
-        #print(variants)
-        encoded_sample = np.zeros((len(variants), max_len_ref+max_len_alt+1))
+        encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + 1))
         for index, item in enumerate(variants):
             pos = list(item.keys())[0]
             var = list(item.values())[0]
