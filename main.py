@@ -30,8 +30,8 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=200):
         file_path = file_names[idx]
         file_name = file_path.split('/')[-1]
         df = allel.vcf_to_dataframe(file_path)
-        samples[file_name] = list()
         try:
+            samples[file_name] = list()
             for idx, i in enumerate(df["POS"].tolist()):
                 variant = dict()
                 variant[i] = "{}>{}".format(df["REF"][idx], df["ALT_1"][idx])
@@ -108,10 +108,7 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
     low_dim_test_predictions = autoencoder.encoder(test_features)
-    print(low_dim_test_predictions.shape)
     post_processing.transform_predictions(low_dim_test_predictions)
-    #if global_step.numpy() % 10 == 0:
-    #print("Step: {}, Loss: {}".format(global_step.numpy(), autoencoder.loss(x_inp, reconstruction).numpy()))
 
 
 if __name__ == "__main__":
