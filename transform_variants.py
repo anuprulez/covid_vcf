@@ -32,7 +32,8 @@ class TransformVariants:
             num_v_sample.append(transformed_variants.shape[0])
         assert np.sum(num_v_sample) == len(encoded_samples)
         print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
-        utils.save_as_json(sample_n_variants, typ)
+        
+        utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
         return encoded_samples
 
     def string_to_array(self, n_seq):

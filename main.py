@@ -14,12 +14,13 @@ import numpy as np
 import transform_variants
 import setup_network
 import post_processing
+import utils
 
 
 SEED = 32000
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=10):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=200):
     file_names = glob.glob(path)
     random.seed(SEED)
     random.shuffle(file_names)
@@ -37,6 +38,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=10):
                 samples[file_name].append(variant)
         except Exception as ex:
             continue
+    utils.save_as_json("data/samples.json", samples)
     return samples
 
 
