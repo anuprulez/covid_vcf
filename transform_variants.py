@@ -3,6 +3,8 @@ import numpy as np
 import re
 from sklearn.preprocessing import LabelEncoder
 
+import utils
+
 
 N_SEQ_ENCODER = [0.25, 0.5, 0.75, 1.0]
 
@@ -12,10 +14,6 @@ class TransformVariants:
         """ Init method. """
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
-
-    def save_as_json(self, data, typ):
-        with open("data/{}_n_variants.json".format(typ), 'w') as fp:
-            json.dump(data, fp)
 
     def get_variants(self, samples, typ):
         print("Transforming variants...")
@@ -30,12 +28,11 @@ class TransformVariants:
             transformed_variants = self.transform_variants(l_variants)
             encoded_samples.extend(transformed_variants)
             variants[sample] = len(transformed_variants)
-            print(sample)
             sample_n_variants.append(variants)
             num_v_sample.append(transformed_variants.shape[0])
         assert np.sum(num_v_sample) == len(encoded_samples)
         print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
-        self.save_as_json(sample_n_variants, typ)
+        utils.save_as_json(sample_n_variants, typ)
         return encoded_samples
 
     def string_to_array(self, n_seq):
