@@ -17,7 +17,7 @@ import utils
 
 
 SEED = 32000
-N_FILES = 50
+N_FILES = 1
 N_EPOCHS = 10
 BATCH_SIZE = 32
 LR = 1e-3
@@ -35,11 +35,14 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
         file_path = file_names[idx]
         file_name = file_path.split('/')[-1]
         df = allel.vcf_to_dataframe(file_path)
+        callset = allel.read_vcf(file_path, fields=['AF'])
+        AF = callset['variants/AF'][:, 0]
+        print(AF)
         try:
             samples[file_name] = list()
             for idx, i in enumerate(df["POS"].tolist()):
                 variant = dict()
-                variant[i] = "{}>{}".format(df["REF"][idx], df["ALT_1"][idx])
+                variant[i] = "{}>{}>{}>{}".format(df["REF"][idx], df["ALT_1"][idx], df["QUAL"][idx], AF[idx])
                 samples[file_name].append(variant)
         except Exception as ex:
             continue
@@ -121,7 +124,7 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
-    tr_data, te_data = split_format_variants(samples)
-    train_autoencoder(tr_data, te_data)
+    #tr_data, te_data = split_format_variants(samples)
+    #train_autoencoder(tr_data, te_data)
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))
