@@ -2,12 +2,10 @@ import json
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
-import seaborn as sns
 import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 
-from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
 import utils

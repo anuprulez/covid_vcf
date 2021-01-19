@@ -6,7 +6,6 @@ import gzip
 import glob
 import random
 from matplotlib import pyplot as plt
-import seaborn as sns
 import pandas as pd
 import tensorflow as tf
 import numpy as np
