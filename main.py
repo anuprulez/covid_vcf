@@ -17,9 +17,15 @@ import utils
 
 
 SEED = 32000
+N_FILES = 50
+N_EPOCHS = 10
+BATCH_SIZE = 32
+LR = 1e-3
+LOW_DIM = 2
+TR_TE_SPLIT = 0.2
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=50):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
     file_names = glob.glob(path)
     random.seed(SEED)
     random.shuffle(file_names)
@@ -41,7 +47,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=50):
     return samples
 
 
-def split_format_variants(samples, tr_test_split=0.2):
+def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
 
     s_names = list()
     variants_freq = dict()
@@ -64,7 +70,7 @@ def split_format_variants(samples, tr_test_split=0.2):
     return tr_transformed_samples, te_transformed_samples
 
 
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=3):
+def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
 
     training_features = np.asarray(train_data)
     
@@ -85,8 +91,8 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
 
     dim = training_features.shape[1]
 
-    autoencoder = setup_network.Autoencoder(intermediate_dim=2, original_dim=dim)
-    optimizer = tf.optimizers.Adam(learning_rate=0.001)
+    autoencoder = setup_network.Autoencoder(intermediate_dim=LOW_DIM, original_dim=dim)
+    optimizer = tf.optimizers.Adam(learning_rate=LR)
     global_step = tf.Variable(0)
 
     for epoch in range(num_epochs):
@@ -106,6 +112,7 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
         te_epo_loss[epoch] = mean_te_loss
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
+        print()
     print("Post processing predictions...")
     low_dim_test_predictions = autoencoder.encoder(test_features)
     post_processing.transform_predictions(low_dim_test_predictions)
@@ -117,4 +124,4 @@ if __name__ == "__main__":
     tr_data, te_data = split_format_variants(samples)
     train_autoencoder(tr_data, te_data)
     end_time = time.time()
-    print("Program finished in {} seconds".format(str(end_time - start_time)))
+    print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))
