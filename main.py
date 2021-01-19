@@ -20,7 +20,7 @@ import utils
 SEED = 32000
 
 
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=200):
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=50):
     file_names = glob.glob(path)
     random.seed(SEED)
     random.shuffle(file_names)
@@ -65,7 +65,7 @@ def split_format_variants(samples, tr_test_split=0.2):
     return tr_transformed_samples, te_transformed_samples
 
 
-def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=10):
+def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, num_epochs=3):
 
     training_features = np.asarray(train_data)
     
@@ -108,6 +108,7 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
     low_dim_test_predictions = autoencoder.encoder(test_features)
+    np.savetxt("data/low_dim_test_predictions.json", low_dim_test_predictions)
     post_processing.transform_predictions(low_dim_test_predictions)
 
 
