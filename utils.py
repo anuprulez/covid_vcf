@@ -1,6 +1,4 @@
-
 import json
-
 
 
 def save_as_json(filepath, data):

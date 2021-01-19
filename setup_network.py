@@ -82,10 +82,6 @@ class Autoencoder(tf.keras.Model):
         code = self.encoder(input_features)
         reconstructed = self.decoder(code)
         return reconstructed
-
-    '''def loss(self, model, original):
-        reconstruction_error = tf.reduce_mean(tf.square(tf.subtract(model(original), original)))
-        return reconstruction_error'''
         
     def loss(self, x, x_bar):
        return tf.losses.mean_squared_error(x, x_bar)

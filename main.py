@@ -107,8 +107,8 @@ def train_autoencoder(train_data, test_data, batch_size=32, learning_rate=1e-3, 
         te_epo_loss[epoch] = mean_te_loss
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
+    print("Post processing predictions...")
     low_dim_test_predictions = autoencoder.encoder(test_features)
-    np.savetxt("data/low_dim_test_predictions.json", low_dim_test_predictions)
     post_processing.transform_predictions(low_dim_test_predictions)
 
 
