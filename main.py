@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import tensorflow as tf
 import numpy as np
+import logging
 
 import transform_variants
 import setup_network
@@ -17,12 +18,16 @@ import utils
 
 
 SEED = 32000
-N_FILES = 50
+N_FILES = 100
 N_EPOCHS = 10
 BATCH_SIZE = 32
 LR = 1e-3
 LOW_DIM = 2
 TR_TE_SPLIT = 0.2
+
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
 
 def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
@@ -48,7 +53,6 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
     utils.save_as_json("data/samples.json", samples)
     return samples
 
-
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
 
     s_names = list()
@@ -61,13 +65,18 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     assert len(train_data) == len(samples) - split_int
 
     assert len(test_data) == split_int
-
+    
     tf_variants = transform_variants.TransformVariants()
+    
+    print("Learning embedding for POS and QUAL...")
+    tf_variants.
+    
+    # learn POS and QUAL embedding
+
     print("Train data...")
-
     tr_transformed_samples = tf_variants.get_variants(train_data, "train")
+    
     print("Test data...")
-
     te_transformed_samples = tf_variants.get_variants(test_data, "test")
     return tr_transformed_samples, te_transformed_samples
 
@@ -76,11 +85,11 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
     training_features = np.asarray(train_data)
     
-    print(training_features.shape)
+    #print(training_features.shape)
     
     test_features = np.asarray(test_data)
 
-    print(test_features.shape)
+    #print(test_features.shape)
 
     training_features = training_features.astype('float32')
 
@@ -91,9 +100,8 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
     print("Start training...")
 
-    dim = training_features.shape[1]
-
-    autoencoder = setup_network.Autoencoder(intermediate_dim=LOW_DIM, original_dim=dim)
+    ORIG_DIM = 10 + 5 + 1 + 16 + 16
+    autoencoder = setup_network.Autoencoder(ORIG_DIM, LOW_DIM)
     optimizer = tf.optimizers.Adam(learning_rate=LR)
     global_step = tf.Variable(0)
 
@@ -102,7 +110,7 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
         te_loss = 0.0
         for x in range(0, len(training_features), batch_size):
             x_inp = training_features[x : x + batch_size]
-            loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
+            loss_value, grads, reconstruction, embedder = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
             c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
             c_te_loss = np.mean(autoencoder.loss(test_features, autoencoder(test_features)).numpy())
@@ -115,15 +123,16 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
         print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
         print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
         print()
-    print("Post processing predictions...")
-    low_dim_test_predictions = autoencoder.encoder(test_features)
-    post_processing.transform_predictions(low_dim_test_predictions)
-
+    #print("Post processing predictions...")
+    #low_dim_test_predictions = autoencoder.encoder(test_features)
+    #post_processing.transform_predictions(low_dim_test_predictions)
+    
 
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
     tr_data, te_data = split_format_variants(samples)
     train_autoencoder(tr_data, te_data)
+    
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

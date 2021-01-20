@@ -1,9 +1,5 @@
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from sklearn.model_selection import train_test_split
-
 import unicodedata
 import re
 import numpy as np
@@ -11,23 +7,43 @@ import os
 import io
 import time
 
+EMBEDDING_DIM = 16
+VOCAB_SIZE = 50000
+
+
+class IntegerEncoder(tf.keras.layers.Layer):
+    def __init__(self):
+        super(IntegerEncoder, self).__init__()
+
+        self.embed_encoder = tf.keras.layers.Embedding(
+            VOCAB_SIZE, EMBEDDING_DIM
+        )
+
+    def call(self, input_features):
+        return self.embed_encoder(input_features)
+        
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim, f_h=8, s_h=4):
+    def __init__(self, embedder, intermediate_dim, f_h=8, s_h=4, embedding_s=8):
         super(Encoder, self).__init__()
-        
-        self.integer_dense = tf.keras.layers.Dense(
-            units=16,
+
+        '''self.integer_dense = tf.keras.layers.Dense(
+            units=embedding_s,
             activation=tf.nn.relu,
-            kernel_initializer=tf.keras.initializers.RandomNormal(stddev=0.01),
-            bias_initializer='zeros'
-        )
+            kernel_initializer=tf.keras.initializers.RandomUniform(), #stddev=0.01
+        )'''
         
+        self.embedder = embedder
+        
+        self.integer_dense = tf.keras.layers.Embedding(
+            50000, embedding_s
+        )
+
         self.hidden_layer1 = tf.keras.layers.Dense(
             units=f_h,
             activation=tf.nn.relu,
         )
-        
+
         self.hidden_layer2 = tf.keras.layers.Dense(
             units=s_h,
             activation=tf.nn.relu,
@@ -38,48 +54,51 @@ class Encoder(tf.keras.layers.Layer):
             activation=tf.nn.relu
         )
 
-        self.output_layer = tf.keras.layers.Dense(
-            units=intermediate_dim,
-            activation=tf.nn.relu
-        )
-
     def call(self, input_features):
         
-        pos_reshape = self.__reshape(input_features[:, 0])
-        qual_reshape = self.__reshape(input_features[:, 1])
+        #print(input_features.shape)
+        
+        #pos_reshape = self.__reshape(input_features[:, 0])
+        #qual_reshape = self.__reshape(input_features[:, 1])
+     
+        #print(pos_reshape.shape)
     
-        pos_mat = self.integer_dense(pos_reshape)
-        qual_mat = self.integer_dense(qual_reshape)
+        # transform POS to a vector
+        #pos_mat = self.embedder(pos_reshape)
         
-        sliced_input_f = input_features[:, 2:]
         
-        cat_pos_qual = np.hstack((pos_mat, qual_mat))
         
-        concatenated_input_f = np.hstack((cat_pos_qual, sliced_input_f))
+        #pos_mat = np.reshape(pos_mat, (pos_mat.shape[0], pos_mat.shape[2]))
         
-        '''print(cat_pos_qual[0,:])
+        #print(pos_mat.shape)
         
-        print()
+        #print(pos_mat.shape)
         
-        print(sliced_input_f[0,:])
+        # transform QUAL to a vector
+        #qual_mat = self.embedder(qual_reshape)
         
-        print()
+        #print(pos_mat.shape)
         
-        print(concatenated_input_f[0,:])
+        #qual_mat = np.reshape(qual_mat, (qual_mat.shape[0], qual_mat.shape[2]))
         
-        print("-------------------")'''
+        #sliced_input_f = input_features[:, 3:]
         
-        a_f_h = self.hidden_layer1(concatenated_input_f)
+        #print(sliced_input_f[0,:])
+        
+        #concatenated_input_f = np.hstack((pos_mat, qual_mat, sliced_input_f))
+        
+        #print(concatenated_input_f.shape)
+        
+        a_f_h = self.hidden_layer1(input_features)
         a_s_h = self.hidden_layer2(a_f_h)
         return self.output_layer(a_s_h)
         
     def __reshape(self, feature):     
         return np.reshape(feature, (feature.shape[0], 1))
-        
 
 
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim, original_dim, f_h=4, s_h=8):
+    def __init__(self, orig_dim, f_h=4, s_h=16):
         super(Decoder, self).__init__()
         
         self.hidden_layer1 = tf.keras.layers.Dense(
@@ -93,12 +112,7 @@ class Decoder(tf.keras.layers.Layer):
         )
         
         self.output_layer = tf.keras.layers.Dense(
-            units=original_dim,
-            activation=tf.nn.relu
-        )
-
-        self.output_layer = tf.keras.layers.Dense(
-            units=original_dim,
+            units=orig_dim,
             activation=tf.nn.relu
         )
 
@@ -109,10 +123,10 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class Autoencoder(tf.keras.Model):
-    def __init__(self, intermediate_dim, original_dim):
+    def __init__(self, original_dim, intermediate_dim):
         super(Autoencoder, self).__init__()
-        self.encoder = Encoder(intermediate_dim=intermediate_dim)
-        self.decoder = Decoder(intermediate_dim=intermediate_dim, original_dim=original_dim)
+        self.encoder = Encoder(intermediate_dim)
+        self.decoder = Decoder(original_dim)
 
     def call(self, input_features):
         code = self.encoder(input_features)
@@ -126,4 +140,4 @@ class Autoencoder(tf.keras.Model):
         with tf.GradientTape() as tape:
             reconstruction = model(inputs)
             loss_value = self.loss(inputs, reconstruction)
-        return loss_value, tape.gradient(loss_value, model.trainable_variables), reconstruction           
+        return loss_value, tape.gradient(loss_value, model.trainable_variables), reconstruction   

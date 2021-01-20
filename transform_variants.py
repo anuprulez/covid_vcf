@@ -2,6 +2,8 @@ import json
 import numpy as np
 import re
 from sklearn.preprocessing import LabelEncoder
+import tensorflow as tf
+import embed_integers
 
 import utils
 
@@ -15,18 +17,22 @@ class TransformVariants:
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
 
+
     def get_variants(self, samples, typ):
         print("Transforming variants...")
         sample_n_variants = list()
         encoded_samples = list()
         num_v_sample = list()
+        pos_qual = list()
         for s_idx, sample in enumerate(samples):
             positions = list()
             variants = list()
             variants = dict()
             l_variants = samples[sample]
             if len(l_variants) > 0:
-                transformed_variants = self.transform_variants(l_variants)
+                pos_qual.extend(self.get_POS_QUAL(l_variants))
+                embedder = self.embed_POS(pos_qual)
+                transformed_variants = self.transform_variants(l_variants, embedder)
                 encoded_samples.extend(transformed_variants)
                 variants[sample] = len(transformed_variants)
                 sample_n_variants.append(variants)
@@ -37,15 +43,18 @@ class TransformVariants:
         utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
         return encoded_samples
 
+
     def string_to_array(self, n_seq):
         n_seq = n_seq.lower()
         n_seq = re.sub('[^acgt]', 'z', n_seq)
         n_seq_arr = np.array(list(n_seq))
         return n_seq_arr  
 
+
     def encode_nucleotides(self, seq, encoded_AGCT=N_SEQ_ENCODER):
         encoded_seq = self.ordinal_encoder(self.string_to_array(seq))
         return encoded_seq
+
 
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
@@ -57,6 +66,47 @@ class TransformVariants:
         float_encoded[float_encoded == 4] = 0.00 # anything else
         return float_encoded
 
+
+    def get_POS_QUAL(self, variants):
+        samples_POS_QUAL = list()
+        for index, item in enumerate(variants):
+            pos = list(item.keys())[0]
+            ref_var = var.split(">")
+            ref, alt_1, qual, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
+            samples_POS_QUAL.append(pos)
+            samples_POS_QUAL.append(qual)
+        return samples_POS_QUAL
+
+
+    def embed_POS(self, POS_QUAL, num_epochs=10)
+
+        split_num = 0.2 * len(POS_QUAL)
+        training_features = POS_QUAL[split_num:]
+        test_features = POS_QUAL[:split_num]
+
+        autoencoder = embed_integers.IntegerAutoencoder()
+        optimizer = tf.optimizers.Adam(learning_rate=0.001)
+        
+        for epoch in range(num_epochs):
+            tr_loss = 0.0
+            te_loss = 0.0
+            for x in range(0, len(training_features), batch_size):
+                x_inp = training_features[x : x + batch_size]
+                loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
+                optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
+                c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
+                c_te_loss = np.mean(autoencoder.loss(test_features, autoencoder(test_features)).numpy())
+                tr_loss += c_tr_loss
+                te_loss += c_te_loss
+            mean_tr_loss = tr_loss / batch_size
+            mean_te_loss = te_loss / batch_size
+            tr_epo_loss[epoch] = mean_tr_loss
+            te_epo_loss[epoch] = mean_te_loss
+            print("Epoch {} training loss: {}".format(epoch + 1, str(np.round(mean_tr_loss, 4))))
+            print("Epoch {} test loss: {}".format(epoch + 1, str(np.round(mean_te_loss, 4))))
+            print()
+        return autoencoder
+
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
         encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + 3))
         for index, item in enumerate(variants):
@@ -67,7 +117,6 @@ class TransformVariants:
             encoded_sample[index, 0:1] = [pos]
             encoded_sample[index, 1:2] = [qual]
             encoded_sample[index, 2:3] = [allel_freq]
-            #print(pos, ref, alt_1, qual, allel_freq)
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
                 encoded_ref = self.encode_nucleotides(ref, max_len_ref)
                 encoded_alt = self.encode_nucleotides(alt_1, max_len_alt)
@@ -75,5 +124,4 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 encoded_sample[index, 3:max_len_ref + 3] = n_e_ref
                 encoded_sample[index, max_len_ref + 3: max_len_ref + max_len_alt + 3] = n_e_alt
-        #print(encoded_sample)
         return encoded_sample
