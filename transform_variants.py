@@ -58,18 +58,22 @@ class TransformVariants:
         return float_encoded
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
-        encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + 1))
+        encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + 3))
         for index, item in enumerate(variants):
             pos = list(item.keys())[0]
             var = list(item.values())[0]
-            #encoded_sample[index, 0:1] = [pos]
             ref_var = var.split(">")
-            ref, alt_1 = ref_var[0], ref_var[1]
+            ref, alt_1, qual, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
+            encoded_sample[index, 0:1] = [pos]
+            encoded_sample[index, 1:2] = [qual]
+            encoded_sample[index, 2:3] = [allel_freq]
+            #print(pos, ref, alt_1, qual, allel_freq)
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
                 encoded_ref = self.encode_nucleotides(ref, max_len_ref)
                 encoded_alt = self.encode_nucleotides(alt_1, max_len_alt)
                 n_e_ref = np.concatenate((encoded_ref, np.zeros(max_len_ref - len(encoded_ref))), axis=None)
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
-                encoded_sample[index, 0:max_len_ref] = n_e_ref
-                encoded_sample[index, max_len_ref:max_len_ref + max_len_alt] = n_e_alt
+                encoded_sample[index, 3:max_len_ref + 3] = n_e_ref
+                encoded_sample[index, max_len_ref + 3: max_len_ref + max_len_alt + 3] = n_e_alt
+        #print(encoded_sample)
         return encoded_sample
