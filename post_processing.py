@@ -16,13 +16,22 @@ def deserialize(var_lst, sample_name):
     var_txt = ""
     var_pos = list()
     var_name = list()
+    var_qual = list()
+    var_af = list()
     for i, item in enumerate(var_lst):
         key = list(item.keys())[0]
         val = list(item.values())[0]
-        var_txt += " {}->{} <br>".format(key, val)
+        
+        var_split = val.split(">")
+        ref, alt, qual, af = var_split[0], var_split[1], var_split[2], var_split[3]
+        
+        var_txt += "{}>{}>{}>{}>{} <br>".format(key, ref, alt, qual, af)
+        
         var_pos.append(key)
-        var_name.append(val)
-    return var_txt, var_pos, var_name
+        var_qual.append(qual)
+        var_af.append(af)
+        var_name.append("{}>{}>{} <br>".format(key, ref, alt))
+    return var_txt, var_pos, var_name, var_qual, var_af
 
 def transform_predictions(pred_test):
     test_count_var = utils.read_json("data/test_n_variants.json")
@@ -37,14 +46,15 @@ def transform_predictions(pred_test):
     var_pos_df = list()
     var_x_df = list()
     var_y_df = list()
-    
+    var_qual_df = list()
+    var_af_df = list()
     x = 0
     for i, c_pred in enumerate(test_count_var):
         idx = list(c_pred.values())[0]
         sample_name = list(c_pred.keys())[0]
         sample_variants = sample_names[sample_name]
         n_sample_variants.append(len(sample_variants))
-        annot, var_pos, var_name = deserialize(sample_variants, sample_name)
+        annot, var_pos, var_name, var_qual, var_af = deserialize(sample_variants, sample_name)
 
         sample_var_summary.append(annot)
         n_samples.append(sample_name)
@@ -57,11 +67,12 @@ def transform_predictions(pred_test):
         var_pos_df.extend(var_pos)
         var_x_df.extend(x_val.numpy())
         var_y_df.extend(y_val.numpy())
-        
+        var_qual_df.extend(var_qual)
+        var_af_df.extend(var_af)
         x = idx
     
     # save predicted df
-    pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "x", "y"])
+    pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_qual, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "Qual", "AF", "x", "y"])
     pred_df.to_csv("data/predicted_var.csv")
     
     cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants)
