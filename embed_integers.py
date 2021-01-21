@@ -12,7 +12,7 @@ import io
 import time
 
 
-EMBEDDING_DIM = 16
+EMBEDDING_DIM = 8
 VOCAB_SIZE = 50000
 
 
@@ -20,8 +20,9 @@ class IntegerEncoder(tf.keras.layers.Layer):
     def __init__(self):
         super(IntegerEncoder, self).__init__()
 
-        self.embed_encoder = tf.keras.layers.Embedding(
-            VOCAB_SIZE, EMBEDDING_DIM
+        self.embed_encoder = tf.keras.layers.Dense(
+            units=EMBEDDING_DIM,
+            activation=tf.nn.relu
         )
 
     def call(self, input_features):
@@ -42,7 +43,7 @@ class IntegerDecoder(tf.keras.layers.Layer):
 
 
 class IntegerAutoencoder(tf.keras.Model):
-    def __init__(self, intermediate_dim):
+    def __init__(self):
         super(IntegerAutoencoder, self).__init__()
         self.encoder = IntegerEncoder()
         self.decoder = IntegerDecoder()

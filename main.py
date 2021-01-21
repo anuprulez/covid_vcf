@@ -68,8 +68,8 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     
     tf_variants = transform_variants.TransformVariants()
     
-    print("Learning embedding for POS and QUAL...")
-    tf_variants.
+    
+    #autoencoder = tf_variants.collect_POS_QUAL(train_data)
     
     # learn POS and QUAL embedding
 
@@ -85,11 +85,11 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
     training_features = np.asarray(train_data)
     
-    #print(training_features.shape)
+    print(training_features.shape)
     
     test_features = np.asarray(test_data)
 
-    #print(test_features.shape)
+    print(test_features.shape)
 
     training_features = training_features.astype('float32')
 
@@ -112,8 +112,12 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
             x_inp = training_features[x : x + batch_size]
             loss_value, grads, reconstruction, embedder = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
-            c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
-            c_te_loss = np.mean(autoencoder.loss(test_features, autoencoder(test_features)).numpy())
+            re_x_inp = embed_test(embedder, x_inp)
+            c_tr_loss = np.mean(autoencoder.loss(re_x_inp, reconstruction).numpy())
+            re_test_features = embed_test(embedder, test_features)
+            #print("Re test features")
+            #print(re_test_features.shape)
+            c_te_loss = np.mean(autoencoder.loss(re_test_features, autoencoder(test_features)).numpy())
             tr_loss += c_tr_loss
             te_loss += c_te_loss
         mean_tr_loss = tr_loss / batch_size
@@ -126,6 +130,34 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     #print("Post processing predictions...")
     #low_dim_test_predictions = autoencoder.encoder(test_features)
     #post_processing.transform_predictions(low_dim_test_predictions)
+    
+def embed_test(embedder, feature):
+
+    pos_reshape = np.reshape(feature[:, 0], (feature[:, 0].shape[0], 1))
+    qual_reshape = np.reshape(feature[:, 1], (feature[:, 1].shape[0], 1))
+
+    #print("Test features...")
+    # transform POS to a vector
+    pos_mat = embedder(pos_reshape)
+        
+    pos_mat = np.reshape(pos_mat, (pos_mat.shape[0], pos_mat.shape[2]))
+        
+    #print(pos_mat.shape)
+        
+    # transform QUAL to a vector
+    qual_mat = embedder(qual_reshape)
+        
+    qual_mat = np.reshape(qual_mat, (qual_mat.shape[0], qual_mat.shape[2]))
+        
+    sliced_input_f = feature[:, 2:]
+        
+    #print(sliced_input_f[0,:])
+        
+    concatenated_input_f = np.hstack((pos_mat, qual_mat, sliced_input_f))
+        
+    #print(concatenated_input_f.shape)
+    #print("=======================")
+    return concatenated_input_f
     
 
 if __name__ == "__main__":
