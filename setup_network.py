@@ -15,8 +15,10 @@ class Encoder(tf.keras.layers.Layer):
         super(Encoder, self).__init__()
 
         self.embedder = tf.keras.layers.Embedding(
-            vocab_size, embed_dim,
-            embeddings_initializer='lecun_normal',
+            vocab_size,
+            embed_dim,
+            input_length=1,
+            embeddings_initializer='uniform',
             trainable=True
         )
 

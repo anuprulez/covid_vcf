@@ -20,7 +20,7 @@ import utils
 SEED = 32000
 N_FILES = 100
 N_EPOCHS = 10
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -99,8 +99,6 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
 
     print("Start training...")
     vocab_size = np.max(tr_pos_qual) + 1 # POS and QUAL
-
-    print(vocab_size, ORIG_DIM, I_DIM, EMBED_DIM)
     autoencoder = setup_network.Autoencoder(vocab_size, ORIG_DIM, I_DIM, EMBED_DIM)
     optimizer = tf.optimizers.Adam(learning_rate=LR)
     global_step = tf.Variable(0)
@@ -108,10 +106,10 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
         tr_loss = 0.0
         te_loss = 0.0
         for x in range(0, len(training_features), batch_size):
-            x_inp = training_features[x : x + batch_size]
-            embedder = autoencoder.encoder.embedder
+            x_inp = training_features[x : x + batch_size]           
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
+            embedder = autoencoder.encoder.embedder
             re_x_inp = utils.encode_integers(embedder, x_inp)
             c_tr_loss = np.mean(autoencoder.loss(re_x_inp, reconstruction).numpy())
             re_test_features = utils.encode_integers(embedder, test_features)
@@ -122,15 +120,18 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
         mean_te_loss = te_loss / batch_size
         tr_epo_loss[epoch] = mean_tr_loss
         te_epo_loss[epoch] = mean_te_loss
-        print(autoencoder.encoder.embedder(np.array([[208]])))
+        #print(dir(embedder))
+        #print(autoencoder.encoder.hidden_layer1.get_weights())
+        #print(embedder.get_weights())
+        #print(autoencoder.encoder.embedder(np.array([[208]])))
         print("Epoch {}/{} training loss: {}".format(epoch + 1, num_epochs, str(np.round(mean_tr_loss, 4))))
         print("Epoch {}/{} test loss: {}".format(epoch + 1, num_epochs, str(np.round(mean_te_loss, 4))))
         print()
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
-    #print("Post processing predictions...")
-    #low_dim_test_predictions = autoencoder.encoder(test_features)
-    #post_processing.transform_predictions(low_dim_test_predictions)
+    print("Post processing predictions...")
+    low_dim_test_predictions = autoencoder.encoder(test_features)
+    post_processing.transform_predictions(low_dim_test_predictions)
     
 
 if __name__ == "__main__":
