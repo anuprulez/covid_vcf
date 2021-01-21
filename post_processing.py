@@ -16,8 +16,6 @@ def deserialize(var_lst, sample_name):
     var_txt = ""
     var_pos = list()
     var_name = list()
-    #var_txt += "Sample name: {} <br>".format(sample_name)
-    #var_txt += "Num of variants: {} <br>".format(str(len(var_lst)))
     for i, item in enumerate(var_lst):
         key = list(item.keys())[0]
         val = list(item.values())[0]
