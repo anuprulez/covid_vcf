@@ -19,7 +19,7 @@ import utils
 
 SEED = 32000
 N_FILES = 40
-N_EPOCHS = 1000
+N_EPOCHS = 5
 BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
@@ -115,31 +115,26 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
             #re_x_inp = utils.encode_integers(embedder, x_inp)
             c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
             #re_test_features = utils.encode_integers(embedder, test_features)
-            
             c_te_loss = np.mean(autoencoder.loss(test_features[:, 2:], autoencoder(test_features[:, 2:])).numpy())
             tr_loss += c_tr_loss
             te_loss += c_te_loss
         sample_f = test_features[:, 2:][0]
         print(test_features[:, 2:][0,:])
+        print()
         print(autoencoder(test_features[:, 2:])[0,:])
-        print("--------------------")
+        print("========================================")
         mean_tr_loss = tr_loss / batch_size
         mean_te_loss = te_loss / batch_size
         tr_epo_loss[epoch] = mean_tr_loss
         te_epo_loss[epoch] = mean_te_loss
-        #print(autoencoder.trainable_variables)
-        #print(dir(embedder))
-        #print(autoencoder.encoder.hidden_layer1.get_weights())
-        #print(embedder.get_weights())
-        #print(autoencoder.encoder.embedder(np.array([[208]])))
         print("Epoch {}/{} training loss: {}".format(epoch + 1, num_epochs, str(np.round(mean_tr_loss, 4))))
         print("Epoch {}/{} test loss: {}".format(epoch + 1, num_epochs, str(np.round(mean_te_loss, 4))))
         print()
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
-    #print("Post processing predictions...")
-    #low_dim_test_predictions = autoencoder.encoder(test_features)
-    #post_processing.transform_predictions(low_dim_test_predictions)
+    print("Post processing predictions...")
+    low_dim_test_predictions = autoencoder.encoder(test_features[:, 2:])
+    post_processing.transform_predictions(low_dim_test_predictions)
 
 
 if __name__ == "__main__":
