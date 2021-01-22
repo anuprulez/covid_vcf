@@ -42,18 +42,15 @@ class TransformVariants:
         utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
         return encoded_samples, pos_qual
 
-
     def string_to_array(self, n_seq):
         n_seq = n_seq.lower()
         n_seq = re.sub('[^acgt]', 'z', n_seq)
         n_seq_arr = np.array(list(n_seq))
         return n_seq_arr  
 
-
     def encode_nucleotides(self, seq, encoded_AGCT=N_SEQ_ENCODER):
         encoded_seq = self.ordinal_encoder(self.string_to_array(seq))
         return encoded_seq
-
 
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
@@ -64,7 +61,6 @@ class TransformVariants:
         float_encoded[float_encoded == 3] = 1.00 # T
         float_encoded[float_encoded == 4] = 0.00 # anything else
         return float_encoded
-
 
     def transform_variants(self, variants, n_features=3, max_len_ref=10, max_len_alt=5):
         encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + 3))

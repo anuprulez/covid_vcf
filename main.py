@@ -18,15 +18,15 @@ import utils
 
 
 SEED = 32000
-N_FILES = 100
-N_EPOCHS = 3
+N_FILES = 40
+N_EPOCHS = 1000
 BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
 REF_DIM = 10
 ALT_1_DIM = 5
-EMBED_DIM = 8
+EMBED_DIM = 0
 ORIG_DIM = REF_DIM + ALT_1_DIM + 1 + EMBED_DIM + EMBED_DIM
 I_DIM = 2
 
@@ -56,7 +56,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
         except Exception as ex:
             continue
     utils.save_as_json("data/samples.json", samples)
-    post_processing.pre_viz(samples)
+    #post_processing.pre_viz(samples)
     return samples
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
@@ -108,20 +108,26 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
         tr_loss = 0.0
         te_loss = 0.0
         for x in range(0, len(training_features), batch_size):
-            x_inp = training_features[x : x + batch_size]           
+            x_inp = training_features[x : x + batch_size][:, 2:]    
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
             embedder = autoencoder.encoder.embedder
-            re_x_inp = utils.encode_integers(embedder, x_inp)
-            c_tr_loss = np.mean(autoencoder.loss(re_x_inp, reconstruction).numpy())
-            re_test_features = utils.encode_integers(embedder, test_features)
-            c_te_loss = np.mean(autoencoder.loss(re_test_features, autoencoder(test_features)).numpy())
+            #re_x_inp = utils.encode_integers(embedder, x_inp)
+            c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
+            #re_test_features = utils.encode_integers(embedder, test_features)
+            
+            c_te_loss = np.mean(autoencoder.loss(test_features[:, 2:], autoencoder(test_features[:, 2:])).numpy())
             tr_loss += c_tr_loss
             te_loss += c_te_loss
+        sample_f = test_features[:, 2:][0]
+        print(test_features[:, 2:][0,:])
+        print(autoencoder(test_features[:, 2:])[0,:])
+        print("--------------------")
         mean_tr_loss = tr_loss / batch_size
         mean_te_loss = te_loss / batch_size
         tr_epo_loss[epoch] = mean_tr_loss
         te_epo_loss[epoch] = mean_te_loss
+        #print(autoencoder.trainable_variables)
         #print(dir(embedder))
         #print(autoencoder.encoder.hidden_layer1.get_weights())
         #print(embedder.get_weights())
@@ -131,16 +137,16 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
         print()
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
-    print("Post processing predictions...")
-    low_dim_test_predictions = autoencoder.encoder(test_features)
-    post_processing.transform_predictions(low_dim_test_predictions)
-    
+    #print("Post processing predictions...")
+    #low_dim_test_predictions = autoencoder.encoder(test_features)
+    #post_processing.transform_predictions(low_dim_test_predictions)
+
 
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
-    #tr_data, te_data, tr_pos_qual = split_format_variants(samples)
-    #train_autoencoder(tr_data, te_data, tr_pos_qual)
+    tr_data, te_data, tr_pos_qual = split_format_variants(samples)
+    train_autoencoder(tr_data, te_data, tr_pos_qual)
     
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

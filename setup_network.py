@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow import feature_column
 
 import unicodedata
 import re
@@ -16,11 +17,16 @@ class Encoder(tf.keras.layers.Layer):
 
         self.embedder = tf.keras.layers.Embedding(
             vocab_size,
-            embed_dim,
+            8,
             input_length=1,
-            embeddings_initializer='uniform',
+            embeddings_initializer='glorot_uniform',
             trainable=True
         )
+        
+        '''self.embedder = tf.keras.layers.Dense(
+            units=8,
+            activation=tf.nn.relu,
+        )'''
 
         self.hidden_layer1 = tf.keras.layers.Dense(
             units=f_h,
@@ -38,8 +44,8 @@ class Encoder(tf.keras.layers.Layer):
         )
 
     def call(self, input_features):
-        re_in_features = utils.encode_integers(self.embedder, input_features)
-        a_f_h = self.hidden_layer1(re_in_features)
+        #re_in_features = utils.encode_integers(self.embedder, input_features)
+        a_f_h = self.hidden_layer1(input_features)
         a_s_h = self.hidden_layer2(a_f_h)
         return self.output_layer(a_s_h)
 
