@@ -18,7 +18,7 @@ import utils
 
 
 SEED = 32000
-N_FILES = 20
+N_FILES = 20000
 N_EPOCHS = 3
 BATCH_SIZE = 32
 LR = 1e-4
@@ -36,6 +36,7 @@ logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
 def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
     file_names = glob.glob(path)
+    print("Total files: {}".format(str(len(file_names))))
     random.seed(SEED)
     random.shuffle(file_names)
     samples = dict()
@@ -55,6 +56,7 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
         except Exception as ex:
             continue
     utils.save_as_json("data/samples.json", samples)
+    post_processing.pre_viz(samples)
     return samples
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
@@ -137,8 +139,8 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
-    tr_data, te_data, tr_pos_qual = split_format_variants(samples)
-    train_autoencoder(tr_data, te_data, tr_pos_qual)
+    #tr_data, te_data, tr_pos_qual = split_format_variants(samples)
+    #train_autoencoder(tr_data, te_data, tr_pos_qual)
     
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

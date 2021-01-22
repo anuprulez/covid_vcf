@@ -12,6 +12,58 @@ import utils
 
 color_dict = {0: "red", 1: "green", 2: "blue"}
 
+def pre_viz(samples):
+    POS = dict()
+    variants = dict()
+    afs = dict()
+    quality = dict()
+    for sample in samples:
+        l_variants = samples[sample]
+        for index, item in enumerate(l_variants):
+            pos = list(item.keys())[0]
+            var = list(item.values())[0]
+            ref_var = var.split(">")
+            ref, alt_1, qual, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
+            if not pos in POS:
+                POS[pos] = 0
+            POS[pos] += 1
+            
+            var = "{}>{}".format(ref, alt_1)
+            if not var in variants:
+                variants[var] = 0
+            variants[var] += 1
+            
+            if not allel_freq in afs:
+                afs[allel_freq] = 0
+            afs[allel_freq] += 1
+            
+            if not qual in quality:
+                quality[qual] = 0
+            quality[qual] += 1
+            
+    plot_freq(POS, "POS", "Frequency of variant positions across samples", "data/pos_freq.html")
+    plot_freq(variants, "Variants", "Frequency of variants across samples", "data/var_freq.html")
+    plot_freq(afs, "AF", "Frequency of AF across samples", "data/afs_freq.html")
+    plot_freq(quality, "Quality", "Frequency of quality across samples", "data/quality_freq.html")
+            
+
+def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
+    qty, count = qty_freq.keys(), qty_freq.values()
+    qty_freq_df = pd.DataFrame(list(zip(qty, count)), columns=[f_name, "Count"])
+    
+    qty_freq_df = qty_freq_df.sort_values(by="Count")
+    
+    print(qty_freq_df)
+    
+    fig = px.bar(qty_freq_df, x=f_name, y='Count',
+        title=title,
+        #color=pd.Series('greenyellow', index=range(len(POS_df)))
+        color_discrete_sequence =['blue']*len(qty_freq_df)
+    )
+    fig.update_traces(marker_color='blue')
+    plotly.offline.plot(fig, filename=file_name)
+    fig.show()	
+
 def deserialize(var_lst, sample_name):
     var_txt = ""
     var_pos = list()
@@ -30,7 +82,7 @@ def deserialize(var_lst, sample_name):
         var_pos.append(key)
         var_qual.append(qual)
         var_af.append(af)
-        var_name.append("{}>{}>{} <br>".format(key, ref, alt))
+        var_name.append("{}>{}".format(ref, alt))
     return var_txt, var_pos, var_name, var_qual, var_af
 
 def transform_predictions(pred_test):
@@ -58,7 +110,7 @@ def transform_predictions(pred_test):
 
         sample_var_summary.append(annot)
         n_samples.append(sample_name)
-        x_val = pred_test[x: x + idx, 0] 
+        x_val = pred_test[x: x + idx, 0]
         y_val = pred_test[x: x + idx:, 1]
         summary_test_pred[i,:] = [np.mean(x_val), np.mean(y_val)]
 
@@ -70,14 +122,14 @@ def transform_predictions(pred_test):
         var_qual_df.extend(var_qual)
         var_af_df.extend(var_af)
         x = idx
-    
+
     # save predicted df
     pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_qual, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "Qual", "AF", "x", "y"])
     pred_df.to_csv("data/predicted_var.csv")
     
-    cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants)
+    cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants, var_name_df, var_pos_df, var_qual_df, var_af_df)
 
-def cluster(features, pt_annotations, n_samples, n_sample_variants, path_plot_df="data/test_clusters.csv"):
+def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df, var_pos_df, var_qual_df, var_af_df, path_plot_df="data/test_clusters.csv"):
 
     #Initialize the class object
     kmeans = KMeans(n_clusters=len(color_dict))
@@ -92,7 +144,7 @@ def cluster(features, pt_annotations, n_samples, n_sample_variants, path_plot_df
         x.append(pred_val[0])
         y.append(pred_val[1])
     
-    scatter_df = pd.DataFrame(list(zip(n_samples, x, y, n_sample_variants, pt_annotations, colors)), columns=["sample_name", "x", "y", "# variants", "annotations", "clusters"])
+    scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_qual_df, var_af_df, n_sample_variants, x, y, pt_annotations, colors)), columns=["sample_name","variant", "POS", "QUAL", "AF", "# variants", "x", "y", "annotations", "clusters"])
     
     scatter_df = scatter_df.sort_values(by="clusters")
     
