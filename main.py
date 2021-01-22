@@ -18,7 +18,7 @@ import utils
 
 
 SEED = 32000
-N_FILES = 20000
+N_FILES = 100
 N_EPOCHS = 3
 BATCH_SIZE = 32
 LR = 1e-4

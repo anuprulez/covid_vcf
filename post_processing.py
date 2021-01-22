@@ -41,10 +41,10 @@ def pre_viz(samples):
                 quality[qual] = 0
             quality[qual] += 1
             
-    plot_freq(POS, "POS", "Frequency of variant positions across samples", "data/pos_freq.html")
-    plot_freq(variants, "Variants", "Frequency of variants across samples", "data/var_freq.html")
-    plot_freq(afs, "AF", "Frequency of AF across samples", "data/afs_freq.html")
-    plot_freq(quality, "Quality", "Frequency of quality across samples", "data/quality_freq.html")
+    plot_freq(POS, "POS", "Frequency of variant positions across samples", "data/pos_freq")
+    plot_freq(variants, "Variants", "Frequency of variants across samples", "data/var_freq")
+    plot_freq(afs, "AF", "Frequency of AF across samples", "data/afs_freq")
+    plot_freq(quality, "Quality", "Frequency of quality across samples", "data/quality_freq")
             
 
 def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
@@ -60,8 +60,14 @@ def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
         #color=pd.Series('greenyellow', index=range(len(POS_df)))
         color_discrete_sequence =['blue']*len(qty_freq_df)
     )
+    
+    f_html = "{}.html".format(file_name)
+    f_csv = "{}.csv".format(file_name)
+    
+    qty_freq_df.to_csv(f_csv)
+    
     fig.update_traces(marker_color='blue')
-    plotly.offline.plot(fig, filename=file_name)
+    plotly.offline.plot(fig, filename=f_html)
     fig.show()	
 
 def deserialize(var_lst, sample_name):
