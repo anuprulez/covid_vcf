@@ -68,7 +68,36 @@ def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
     
     fig.update_traces(marker_color='blue')
     plotly.offline.plot(fig, filename=f_html)
-    fig.show()	
+    fig.show()
+    
+def get_layout(plt_title):
+    layout = go.Layout(xaxis=go.layout.XAxis(
+        title=go.layout.xaxis.Title(
+            text='Features',
+        )),
+    yaxis=go.layout.YAxis(
+        title=go.layout.yaxis.Title(
+            text='Number of samples',
+        )
+    ),
+        title=plt_title
+    )
+    
+    return layout
+    
+def plot_true_pred(true, predicted):
+    
+    fig_true = go.Figure(data=go.Heatmap(
+                   z=true,
+                   hoverongaps = False), layout=get_layout("True test samples"))
+    fig_true.show()
+    
+    fig_pred = go.Figure(data=go.Heatmap(
+                   z=predicted,
+                   hoverongaps = False), layout=get_layout("Predicted test samples"))
+    fig_pred.show()
+    plotly.offline.plot(fig_true, filename="data/true_matrix.html")
+    plotly.offline.plot(fig_pred, filename="data/predicted_matrix.html")
 
 def deserialize(var_lst, sample_name):
     var_txt = ""

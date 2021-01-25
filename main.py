@@ -18,8 +18,8 @@ import utils
 
 
 SEED = 32000
-N_FILES = 40
-N_EPOCHS = 5
+N_FILES = 50
+N_EPOCHS = 1
 BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
@@ -103,28 +103,29 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
     vocab_size = np.max(tr_pos_qual) + 1 # POS and QUAL
     autoencoder = setup_network.Autoencoder(vocab_size, ORIG_DIM, I_DIM, EMBED_DIM)
     optimizer = tf.optimizers.Adam(learning_rate=LR)
+    steps = training_features.shape[0] / float(batch_size)
     global_step = tf.Variable(0)
     for epoch in range(num_epochs):
-        tr_loss = 0.0
-        te_loss = 0.0
+        tr_loss = list()
+        te_loss = list()
         for x in range(0, len(training_features), batch_size):
             x_inp = training_features[x : x + batch_size][:, 2:]    
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
-            embedder = autoencoder.encoder.embedder
+            #embedder = autoencoder.encoder.embedder
             #re_x_inp = utils.encode_integers(embedder, x_inp)
-            c_tr_loss = np.mean(autoencoder.loss(x_inp, reconstruction).numpy())
+            c_tr_loss = autoencoder.loss(x_inp, reconstruction)
             #re_test_features = utils.encode_integers(embedder, test_features)
-            c_te_loss = np.mean(autoencoder.loss(test_features[:, 2:], autoencoder(test_features[:, 2:])).numpy())
-            tr_loss += c_tr_loss
-            te_loss += c_te_loss
+            c_te_loss = autoencoder.loss(test_features[:, 2:], autoencoder(test_features[:, 2:]))
+            tr_loss.append(c_tr_loss)
+            te_loss.append(c_te_loss)
         sample_f = test_features[:, 2:][0]
-        print(test_features[:, 2:][0,:])
-        print()
-        print(autoencoder(test_features[:, 2:])[0,:])
-        print("========================================")
-        mean_tr_loss = tr_loss / batch_size
-        mean_te_loss = te_loss / batch_size
+        #print(test_features[:, 2:][0,:])
+        #print()
+        #print(autoencoder(test_features[:, 2:])[0,:])
+        #print("========================================")
+        mean_tr_loss = np.mean(tr_loss)
+        mean_te_loss = np.mean(te_loss)
         tr_epo_loss[epoch] = mean_tr_loss
         te_epo_loss[epoch] = mean_te_loss
         print("Epoch {}/{} training loss: {}".format(epoch + 1, num_epochs, str(np.round(mean_tr_loss, 4))))
@@ -133,8 +134,10 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
     print("Post processing predictions...")
-    low_dim_test_predictions = autoencoder.encoder(test_features[:, 2:])
-    post_processing.transform_predictions(low_dim_test_predictions)
+    #low_dim_test_predictions = autoencoder.encoder(test_features[:, 2:])
+    #post_processing.transform_predictions(low_dim_test_predictions)
+    test_data = test_features[:, 2:]
+    post_processing.plot_true_pred(test_data, autoencoder(test_data))
 
 
 if __name__ == "__main__":

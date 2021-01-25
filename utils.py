@@ -25,13 +25,7 @@ def encode_integers(embedder, features):
     pos_mat = tf.clip_by_value(
         pos_mat, 0.0, 1.0, name=None
     )
-    
-    #print(pos_mat)
-    
-    #print(pos_mat_clipped)
-    
-    #print(pos_reshape.shape)
-    #print(pos_mat.shape)
+
     pos_mat = np.reshape(pos_mat, (pos_mat.shape[0], pos_mat.shape[2]))
     # transform QUAL integer to a vector
     qual_mat = embedder(qual_reshape)
