@@ -18,9 +18,9 @@ import utils
 
 
 SEED = 32000
-N_FILES = 50
-N_EPOCHS = 1
-BATCH_SIZE = 32
+N_FILES = 100
+N_EPOCHS = 20
+BATCH_SIZE = 256
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -134,8 +134,8 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
     print("Post processing predictions...")
-    #low_dim_test_predictions = autoencoder.encoder(test_features[:, 2:])
-    #post_processing.transform_predictions(low_dim_test_predictions)
+    low_dim_test_predictions = autoencoder.encoder(test_features[:, 2:])
+    post_processing.transform_predictions(low_dim_test_predictions)
     test_data = test_features[:, 2:]
     post_processing.plot_true_pred(test_data, autoencoder(test_data))
 

@@ -81,11 +81,7 @@ class Autoencoder(tf.keras.Model):
         return self.decoder(code)
         
     def loss(self, x, x_pred):
-       #print(x.shape, x_pred.shape)
-       #print(tf.losses.binary_crossentropy(x, x_pred))
-       #print(tf.math.reduce_mean(tf.losses.binary_crossentropy(x, x_pred)))
        return tf.math.reduce_mean(tf.losses.binary_crossentropy(x, x_pred))
-       #tf.losses.mean_squared_error(x, x_pred)
 
     def grad(self, model, inputs):
         with tf.GradientTape() as tape:
