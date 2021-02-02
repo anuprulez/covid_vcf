@@ -1,18 +1,31 @@
 import json
 import numpy as np
 import tensorflow as tf
-from tensorflow import feature_column
+from sklearn.preprocessing import MinMaxScaler
 
 
 def save_as_json(filepath, data):
     with open(filepath, 'w') as fp:
         json.dump(data, fp)
-        
+
 
 def read_json(path):
     with open(path, 'r') as fp:
         f_content = json.loads(fp.readline())
         return f_content
+
+
+def transform_integers(train_data, test_data):
+    scaler = MinMaxScaler()
+    tr_feature = feature_reshape(train_data[:, 0])
+    scaler.fit(tr_feature)
+    tr_feature_transformed = scaler.transform(tr_feature)
+    train_data_transformed = np.hstack((tr_feature_transformed, train_data[:, 1:]))
+    
+    te_feature = feature_reshape(test_data[:, 0])
+    te_feature_transformed = scaler.transform(te_feature)
+    test_data_transformed = np.hstack((te_feature_transformed, test_data[:, 1:]))
+    return train_data_transformed, test_data_transformed
 
 
 def encode_integers(embedder, features):
@@ -41,4 +54,3 @@ def encode_integers(embedder, features):
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))
-
