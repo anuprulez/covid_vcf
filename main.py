@@ -18,9 +18,9 @@ import utils
 
 
 SEED = 32000
-N_FILES = 200
-N_EPOCHS = 100
-BATCH_SIZE = 256
+N_FILES = 1000
+N_EPOCHS = 20
+BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -28,6 +28,7 @@ REF_DIM = 10
 ALT_1_DIM = 5
 ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
 I_DIM = 2
+MIN_AF = 0.05
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -50,8 +51,10 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
             samples[file_name] = list()
             for idx, i in enumerate(df["POS"].tolist()):
                 variant = dict()
-                variant[i] = "{}>{}>{}>{}".format(df["REF"][idx], df["ALT_1"][idx], df["QUAL"][idx], AF[idx])
-                samples[file_name].append(variant)
+                af = AF[idx]
+                if af > MIN_AF and df["FILTER_PASS"][idx] == True:
+                    variant[i] = "{}>{}>{}>{}".format(df["REF"][idx], df["ALT_1"][idx], df["QUAL"][idx], AF[idx])
+                    samples[file_name].append(variant)
         except Exception as ex:
             continue
     utils.save_as_json("data/samples.json", samples)
