@@ -106,11 +106,12 @@ def deserialize(var_lst, sample_name):
     var_af = list()
     for i, item in enumerate(var_lst):
         var_split = item.split(">")
+        #print(sample_name, var_split)
         pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
-        var_txt += "{}>{}>{}>{} <br>".format(pos, ref, alt, af)
+        var_txt += "{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af)
         var_pos.append(pos)
         var_af.append(af)
-        var_name.append("{}>{}".format(ref, alt))
+        var_name.append("{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af))
     return var_txt, var_pos, var_name, var_af
 
 def transform_predictions(pred_test):
@@ -119,8 +120,7 @@ def transform_predictions(pred_test):
     n_samples = list()
     n_sample_variants = list()
     sample_var_summary = list()
-    summary_test_pred = np.zeros((len(test_count_var), pred_test.shape[1]))
-    
+    pred_test = pred_test.numpy()
     s_name_df = list()
     var_name_df = list()
     var_pos_df = list()
@@ -139,24 +139,23 @@ def transform_predictions(pred_test):
         n_samples.append(sample_name)
         x_val = pred_test[x: x + idx, 0]
         y_val = pred_test[x: x + idx:, 1]
-        summary_test_pred[i,:] = [np.mean(x_val), np.mean(y_val)]
 
         s_name_df.extend(np.repeat(sample_name, idx))
         var_name_df.extend(var_name)
         var_pos_df.extend(var_pos)
-        var_x_df.extend(x_val.numpy())
-        var_y_df.extend(y_val.numpy())
+        var_x_df.extend(x_val)
+        var_y_df.extend(y_val)
         var_af_df.extend(var_af)
         x = idx
 
     # save predicted df
     pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "AF", "x", "y"])
+    print(pred_df)
     pred_df.to_csv("data/predicted_var.csv")
     
-    cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants, var_name_df, var_pos_df, var_af_df)
+    cluster(pred_test, var_name_df, s_name_df, var_name_df, var_pos_df, var_af_df)
 
-def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
-
+def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
     #Initialize the class object
     kmeans = KMeans(n_clusters=len(color_dict))
     #predict the labels of clusters
@@ -170,12 +169,9 @@ def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df,
         x.append(pred_val[0])
         y.append(pred_val[1])
     
-    scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_af_df, n_sample_variants, x, y, pt_annotations, colors)), columns=["sample_name","variant", "POS", "AF", "# variants", "x", "y", "annotations", "clusters"])
-    
+    scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_af_df, x, y, pt_annotations, colors)), columns=["sample_name", "variant", "POS", "AF", "x", "y", "annotations", "clusters"])    
+    print(scatter_df)
     scatter_df = scatter_df.sort_values(by="clusters")
-    
-    scatter_df.to_csv(path_plot_df)
-
     fig = px.scatter(scatter_df,
         x="x",
         y="y",
@@ -183,7 +179,7 @@ def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df,
         hover_data=['annotations'],
         size=np.repeat(20, len(colors))
     )
-
+    scatter_df.to_csv(path_plot_df)
     plotly.offline.plot(fig, filename='data/cluster_variants.html')
 
     fig.show()
