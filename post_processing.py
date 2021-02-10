@@ -103,26 +103,19 @@ def deserialize(var_lst, sample_name):
     var_txt = ""
     var_pos = list()
     var_name = list()
-    var_qual = list()
     var_af = list()
     for i, item in enumerate(var_lst):
-        key = list(item.keys())[0]
-        val = list(item.values())[0]
-        
-        var_split = val.split(">")
-        ref, alt, qual, af = var_split[0], var_split[1], var_split[2], var_split[3]
-        
-        var_txt += "{}>{}>{}>{}>{} <br>".format(key, ref, alt, qual, af)
-        
-        var_pos.append(key)
-        var_qual.append(qual)
+        var_split = item.split(">")
+        pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
+        var_txt += "{}>{}>{}>{} <br>".format(pos, ref, alt, af)
+        var_pos.append(pos)
         var_af.append(af)
         var_name.append("{}>{}".format(ref, alt))
-    return var_txt, var_pos, var_name, var_qual, var_af
+    return var_txt, var_pos, var_name, var_af
 
 def transform_predictions(pred_test):
     test_count_var = utils.read_json("data/test_n_variants.json")
-    sample_names = utils.read_json("data/samples.json")
+    sample_names = utils.read_json("data/samples_dict.json")
     n_samples = list()
     n_sample_variants = list()
     sample_var_summary = list()
@@ -133,7 +126,6 @@ def transform_predictions(pred_test):
     var_pos_df = list()
     var_x_df = list()
     var_y_df = list()
-    var_qual_df = list()
     var_af_df = list()
     x = 0
     for i, c_pred in enumerate(test_count_var):
@@ -141,7 +133,7 @@ def transform_predictions(pred_test):
         sample_name = list(c_pred.keys())[0]
         sample_variants = sample_names[sample_name]
         n_sample_variants.append(len(sample_variants))
-        annot, var_pos, var_name, var_qual, var_af = deserialize(sample_variants, sample_name)
+        annot, var_pos, var_name, var_af = deserialize(sample_variants, sample_name)
 
         sample_var_summary.append(annot)
         n_samples.append(sample_name)
@@ -154,17 +146,16 @@ def transform_predictions(pred_test):
         var_pos_df.extend(var_pos)
         var_x_df.extend(x_val.numpy())
         var_y_df.extend(y_val.numpy())
-        var_qual_df.extend(var_qual)
         var_af_df.extend(var_af)
         x = idx
 
     # save predicted df
-    pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_qual, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "Qual", "AF", "x", "y"])
+    pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "AF", "x", "y"])
     pred_df.to_csv("data/predicted_var.csv")
     
-    cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants, var_name_df, var_pos_df, var_qual_df, var_af_df)
+    cluster(summary_test_pred, sample_var_summary, n_samples, n_sample_variants, var_name_df, var_pos_df, var_af_df)
 
-def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df, var_pos_df, var_qual_df, var_af_df, path_plot_df="data/test_clusters.csv"):
+def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
 
     #Initialize the class object
     kmeans = KMeans(n_clusters=len(color_dict))
@@ -179,7 +170,7 @@ def cluster(features, pt_annotations, n_samples, n_sample_variants, var_name_df,
         x.append(pred_val[0])
         y.append(pred_val[1])
     
-    scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_qual_df, var_af_df, n_sample_variants, x, y, pt_annotations, colors)), columns=["sample_name","variant", "POS", "QUAL", "AF", "# variants", "x", "y", "annotations", "clusters"])
+    scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_af_df, n_sample_variants, x, y, pt_annotations, colors)), columns=["sample_name","variant", "POS", "AF", "# variants", "x", "y", "annotations", "clusters"])
     
     scatter_df = scatter_df.sort_values(by="clusters")
     

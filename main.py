@@ -19,72 +19,57 @@ import utils
 
 SEED = 32000
 N_FILES = 1000
-N_EPOCHS = 20
+N_EPOCHS = 5
 BATCH_SIZE = 32
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
-REF_DIM = 10
+REF_DIM = 5
 ALT_1_DIM = 5
 ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
 I_DIM = 2
-MIN_AF = 0.05
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
-
-def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
-    file_names = glob.glob(path)
-    print("Total files: {}".format(str(len(file_names))))
-    random.seed(SEED)
-    random.shuffle(file_names)
-    samples = dict()
-    print("Preparing variants...")
-    for idx in range(n_max_file):
-        file_path = file_names[idx]
-        file_name = file_path.split('/')[-1]
-        df = allel.vcf_to_dataframe(file_path)
-        callset = allel.read_vcf(file_path, fields=['AF'])
-        try:
-            AF = callset['variants/AF'][:, 0]
-            samples[file_name] = list()
-            for idx, i in enumerate(df["POS"].tolist()):
-                variant = dict()
-                af = AF[idx]
-                if af > MIN_AF and df["FILTER_PASS"][idx] == True:
-                    variant[i] = "{}>{}>{}>{}".format(df["REF"][idx], df["ALT_1"][idx], df["QUAL"][idx], AF[idx])
-                    samples[file_name].append(variant)
-        except Exception as ex:
-            continue
-    utils.save_as_json("data/samples.json", samples)
-    #post_processing.pre_viz(samples)
-    return samples
+def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
+    """
+    
+    """
+    print("Extracting data from tabular variants file...")
+    take_cols = ["Sample", "POS", "REF", "ALT", "AF"]
+    by_sample_dataframe = pd.read_csv(path, sep="\t")
+    by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
+    samples_dict = dict()
+    for idx in range(len(by_sample_dataframe_take_cols)):
+        sample_row = by_sample_dataframe_take_cols.take([idx])
+        sample_name = sample_row["Sample"].values[0]
+        variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
+        if sample_name not in samples_dict:
+            samples_dict[sample_name] = list()
+        samples_dict[sample_name].append(variant)
+    assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == "SRR11953670"]) == len(samples_dict["SRR11953670"])
+    utils.save_as_json("data/samples_dict.json", samples_dict)
+    return samples_dict
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
-
     s_names = list()
     variants_freq = dict()
     # split samples into train and test
     split_int = int(len(samples) * tr_test_split)
     train_data = dict(list(samples.items())[split_int:])
     test_data = dict(list(samples.items())[:split_int])
-
     assert len(train_data) == len(samples) - split_int
-
     assert len(test_data) == split_int
-
     tf_variants = transform_variants.TransformVariants()
-
     print("Train data...")
-    tr_transformed_samples, tr_pos_qual = tf_variants.get_variants(train_data, "train")
-
+    tr_transformed_samples = tf_variants.get_variants(train_data, "train")
     print("Test data...")
-    te_transformed_samples , _ = tf_variants.get_variants(test_data, "test")
-    return tr_transformed_samples, te_transformed_samples, tr_pos_qual
+    te_transformed_samples = tf_variants.get_variants(test_data, "test")
+    return tr_transformed_samples, te_transformed_samples
 
 
-def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
+def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
 
     training_features = np.asarray(train_data)
     
@@ -136,17 +121,17 @@ def train_autoencoder(train_data, test_data, tr_pos_qual, batch_size=BATCH_SIZE,
         print()
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
-    #print("Post processing predictions...")
-    #low_dim_test_predictions = autoencoder.encoder(test_features)
-    #post_processing.transform_predictions(low_dim_test_predictions)
+    print("Post processing predictions...")
+    low_dim_test_predictions = autoencoder.encoder(test_features)
+    post_processing.transform_predictions(low_dim_test_predictions)
     #post_processing.plot_true_pred(test_features, autoencoder(test_features))
 
 
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
-    tr_data, te_data, tr_pos_qual = split_format_variants(samples)
-    train_autoencoder(tr_data, te_data, tr_pos_qual)
+    tr_data, te_data = split_format_variants(samples)
+    train_autoencoder(tr_data, te_data)
     
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

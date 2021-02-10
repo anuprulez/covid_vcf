@@ -29,18 +29,16 @@ class TransformVariants:
             variants = dict()
             l_variants = samples[sample]
             if len(l_variants) > 0:
-                transformed_variants, s_pos_qual = self.transform_variants(l_variants)
-                pos_qual.extend(s_pos_qual)
+                transformed_variants = self.transform_variants(l_variants)
                 encoded_samples.extend(transformed_variants)
                 variants[sample] = len(transformed_variants)
                 sample_n_variants.append(variants)
                 num_v_sample.append(transformed_variants.shape[0])
-                
         assert np.sum(num_v_sample) == len(encoded_samples)
         print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
 
         utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
-        return encoded_samples, pos_qual
+        return encoded_samples
 
     def string_to_array(self, n_seq):
         n_seq = n_seq.lower()
@@ -62,14 +60,12 @@ class TransformVariants:
         float_encoded[float_encoded == 4] = 0.00 # anything else
         return float_encoded
 
-    def transform_variants(self, variants, n_features=2, max_len_ref=10, max_len_alt=5):
+    def transform_variants(self, variants, n_features=2, max_len_ref=5, max_len_alt=5):
         encoded_sample = np.zeros((len(variants), max_len_ref + max_len_alt + n_features))
         s_pos_qual = list()
         for index, item in enumerate(variants):
-            pos = list(item.keys())[0]
-            var = list(item.values())[0]
-            ref_var = var.split(">")
-            ref, alt_1, qual, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
+            ref_var = item.split(">")
+            pos, ref, alt_1, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
             encoded_sample[index, 0:1] = [pos]
             encoded_sample[index, 1:2] = [allel_freq]
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
@@ -79,4 +75,4 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 encoded_sample[index, n_features:max_len_ref + n_features] = n_e_ref
                 encoded_sample[index, max_len_ref + n_features: max_len_ref + max_len_alt + n_features] = n_e_alt
-        return encoded_sample, s_pos_qual
+        return encoded_sample

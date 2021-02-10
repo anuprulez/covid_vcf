@@ -12,7 +12,7 @@ import utils
 
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim, f_h=16, s_h=8):
+    def __init__(self, intermediate_dim, f_h=8, s_h=4):
         super(Encoder, self).__init__()
 
         self.hidden_layer1 = tf.keras.layers.Dense(
@@ -37,7 +37,7 @@ class Encoder(tf.keras.layers.Layer):
 
 
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, orig_dim, f_h=8, s_h=16):
+    def __init__(self, orig_dim, f_h=4, s_h=8):
         super(Decoder, self).__init__()
         
         self.hidden_layer1 = tf.keras.layers.Dense(
