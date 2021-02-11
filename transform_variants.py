@@ -44,7 +44,7 @@ class TransformVariants:
         n_seq = n_seq.lower()
         n_seq = re.sub('[^acgt]', 'z', n_seq)
         n_seq_arr = np.array(list(n_seq))
-        return n_seq_arr  
+        return n_seq_arr
 
     def encode_nucleotides(self, seq, encoded_AGCT=N_SEQ_ENCODER):
         encoded_seq = self.ordinal_encoder(self.string_to_array(seq))

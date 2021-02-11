@@ -7,10 +7,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from sklearn.cluster import KMeans
+from sklearn.cluster import DBSCAN
 
 import utils
 
 color_dict = {0: "red", 1: "green", 2: "blue"}
+N_C = 5 #len(color_dict)
 
 def pre_viz(samples):
     POS = dict()
@@ -20,10 +22,8 @@ def pre_viz(samples):
     for sample in samples:
         l_variants = samples[sample]
         for index, item in enumerate(l_variants):
-            pos = list(item.keys())[0]
-            var = list(item.values())[0]
-            ref_var = var.split(">")
-            ref, alt_1, qual, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
+            ref_var = item.split(">")
+            pos, ref, alt_1, allel_freq = int(ref_var[0]), ref_var[1], ref_var[2], float(ref_var[3])
             if not pos in POS:
                 POS[pos] = 0
             POS[pos] += 1
@@ -37,27 +37,22 @@ def pre_viz(samples):
                 afs[allel_freq] = 0
             afs[allel_freq] += 1
             
-            if not qual in quality:
-                quality[qual] = 0
-            quality[qual] += 1
-            
-    plot_freq(POS, "POS", "Frequency of variant positions across samples", "data/pos_freq")
-    plot_freq(variants, "Variants", "Frequency of variants across samples", "data/var_freq")
-    plot_freq(afs, "AF", "Frequency of AF across samples", "data/afs_freq")
-    plot_freq(quality, "Quality", "Frequency of quality across samples", "data/quality_freq")
+    _ = plot_freq(POS, "POS", "Frequency of variant positions across samples", "data/pos_freq")
+    qty_var_df = plot_freq(variants, "Variants", "Frequency of variants across samples", "data/var_freq")
+    _ = plot_freq(afs, "AF", "Frequency of AF across samples", "data/afs_freq")
+    return qty_var_df
             
 
 def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
     qty, count = qty_freq.keys(), qty_freq.values()
     qty_freq_df = pd.DataFrame(list(zip(qty, count)), columns=[f_name, "Count"])
     
-    qty_freq_df = qty_freq_df.sort_values(by="Count")
+    qty_freq_df = qty_freq_df.sort_values(by=f_name)
     
     print(qty_freq_df)
     
     fig = px.bar(qty_freq_df, x=f_name, y='Count',
         title=title,
-        #color=pd.Series('greenyellow', index=range(len(POS_df)))
         color_discrete_sequence =['blue']*len(qty_freq_df)
     )
     
@@ -69,6 +64,7 @@ def plot_freq(qty_freq, f_name=None, title=None, file_name=None):
     fig.update_traces(marker_color='blue')
     plotly.offline.plot(fig, filename=f_html)
     fig.show()
+    return qty_freq_df
     
 def get_layout(plt_title):
     layout = go.Layout(xaxis=go.layout.XAxis(
@@ -106,7 +102,6 @@ def deserialize(var_lst, sample_name):
     var_af = list()
     for i, item in enumerate(var_lst):
         var_split = item.split(">")
-        #print(sample_name, var_split)
         pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
         var_txt += "{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af)
         var_pos.append(pos)
@@ -150,14 +145,16 @@ def transform_predictions(pred_test):
 
     # save predicted df
     pred_df = pd.DataFrame(list(zip(s_name_df, var_name_df, var_pos_df, var_af, var_x_df, var_y_df)), columns=["sample_name", "variant", "POS", "AF", "x", "y"])
-    print(pred_df)
     pred_df.to_csv("data/predicted_var.csv")
     
     cluster(pred_test, var_name_df, s_name_df, var_name_df, var_pos_df, var_af_df)
 
 def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
     #Initialize the class object
-    kmeans = KMeans(n_clusters=len(color_dict))
+    kmeans = KMeans(n_clusters=N_C)
+    
+    #dbscan_clusters = DBSCAN(eps=1e-2, min_samples=50).fit(features)
+    
     #predict the labels of clusters
     cluster_labels = kmeans.fit_predict(features)
     colors = list()
@@ -170,7 +167,6 @@ def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af
         y.append(pred_val[1])
     
     scatter_df = pd.DataFrame(list(zip(n_samples, var_name_df, var_pos_df, var_af_df, x, y, pt_annotations, colors)), columns=["sample_name", "variant", "POS", "AF", "x", "y", "annotations", "clusters"])    
-    print(scatter_df)
     scatter_df = scatter_df.sort_values(by="clusters")
     fig = px.scatter(scatter_df,
         x="x",
@@ -183,3 +179,18 @@ def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af
     plotly.offline.plot(fig, filename='data/cluster_variants.html')
 
     fig.show()
+    
+def plot_loss(losses, title):
+    epochs = np.arange(1, len(losses))
+    df_loss = pd.DataFrame(list(zip(epochs, losses)), columns=["Epochs", "Loss"])    
+    fig = px.line(df_loss, x="Epochs", y="Loss", title=title)
+    plotly.offline.plot(fig, filename='data/{}.html'.format(title))
+    fig.show()
+    
+def plot_losses():
+    tr_loss = utils.read_txt("data/train_loss.txt")
+    te_loss = utils.read_txt("data/test_loss.txt")
+    print(tr_loss)
+    print(te_loss)
+    plot_loss(tr_loss, "Train loss")
+    plot_loss(te_loss, "Test loss")   

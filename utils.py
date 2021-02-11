@@ -42,11 +42,11 @@ def encode_integers(embedder, features):
     pos_mat = np.reshape(pos_mat, (pos_mat.shape[0], pos_mat.shape[2]))
     # transform QUAL integer to a vector
     qual_mat = embedder(qual_reshape)
-    
+
     qual_mat = tf.clip_by_value(
         qual_mat, 0.0, 1.0, name=None
     )
-    
+
     qual_mat = np.reshape(qual_mat, (qual_mat.shape[0], qual_mat.shape[2]))
     np.hstack((pos_mat, qual_mat, features[:, 2:]))
     return features
@@ -54,3 +54,13 @@ def encode_integers(embedder, features):
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))
+    
+
+def read_txt(file_path):
+    with open(file_path, "r") as fr:
+        data = fr.read()
+    loss = list()
+    for ln in data.split("\n"):
+        if ln not in ['']:
+            loss.append(float(ln))
+    return loss

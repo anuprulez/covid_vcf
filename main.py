@@ -10,6 +10,7 @@ import pandas as pd
 import tensorflow as tf
 import numpy as np
 import logging
+import h5py
 
 import transform_variants
 import setup_network
@@ -19,8 +20,8 @@ import utils
 
 SEED = 32000
 N_FILES = 1000
-N_EPOCHS = 1
-BATCH_SIZE = 32
+N_EPOCHS = 50
+BATCH_SIZE = 30
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -28,6 +29,7 @@ REF_DIM = 5
 ALT_1_DIM = 5
 ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
 I_DIM = 2
+MODEL_SAVE_PATH = "data/saved_models/model"
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -61,13 +63,40 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     test_data = dict(list(samples.items())[:split_int])
     assert len(train_data) == len(samples) - split_int
     assert len(test_data) == split_int
+    
+    #var_freq = post_processing.pre_viz(train_data)
+    
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
     tr_transformed_samples = tf_variants.get_variants(train_data, "train")
+    
+    
+    
     print("Test data...")
     te_transformed_samples = tf_variants.get_variants(test_data, "test")
     return tr_transformed_samples, te_transformed_samples
 
+
+def balance_train_data(train_data, batch_size):
+    balanced_tr_data = np.zeros((train_data.shape[0], train_data.shape[1]))
+    
+    pos_categories = {"0": "0-10000", "1": "10001-20000", "2": "20001-30000"}
+    af_categories = {"0": "0.0-0.33", "1": "0.33-0.66", "2": "0.66-1.0"}
+    
+    for i in range(batch_size):
+        get_rand_pos = random.choice((list(pos_categories.keys())))
+        get_rand_af = random.choice((list(af_categories.keys())))
+        #print(get_rand_pos)
+        rand_pos = pos_categories[get_rand_pos]
+        print(rand_pos)
+    
+        #print(get_rand_af)
+        rand_af = af_categories[get_rand_af]
+        print(rand_af)
+    
+        print("-------------------")
+    
+    
 
 def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
 
@@ -91,6 +120,10 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     
     tr_epo_loss = np.zeros((num_epochs, 1))
     te_epo_loss = np.zeros((num_epochs, 1))
+    
+    balance_train_data(training_features, BATCH_SIZE)
+    
+    sys.exit()
 
     print("Start training...")
     autoencoder = setup_network.Autoencoder(ORIG_DIM, I_DIM)
@@ -122,8 +155,12 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     np.savetxt("data/train_loss.txt", tr_epo_loss)
     np.savetxt("data/test_loss.txt", te_epo_loss)
     print("Post processing predictions...")
-    low_dim_test_predictions = autoencoder.encoder(test_features)
-    post_processing.transform_predictions(low_dim_test_predictions)
+    autoencoder.save(MODEL_SAVE_PATH)
+    h5f = h5py.File('data/test_data.h5', 'w')
+    h5f.create_dataset('test_data', data=test_features)
+    #low_dim_test_predictions = autoencoder.encoder(test_features)
+    #post_processing.transform_predictions(low_dim_test_predictions)
+    post_processing.plot_losses()
     #post_processing.plot_true_pred(test_features, autoencoder(test_features))
 
 
@@ -132,6 +169,6 @@ if __name__ == "__main__":
     samples = read_files()
     tr_data, te_data = split_format_variants(samples)
     train_autoencoder(tr_data, te_data)
-    
+
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))
