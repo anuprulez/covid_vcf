@@ -19,15 +19,9 @@ import utils
 
 
 SEED = 32000
-<<<<<<< HEAD
-N_FILES = 1000
-N_EPOCHS = 50
-BATCH_SIZE = 30
-=======
 N_FILES = 200
 N_EPOCHS = 100
 BATCH_SIZE = 256
->>>>>>> parent of 134b99e... Filter data
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -35,35 +29,10 @@ REF_DIM = 5
 ALT_1_DIM = 5
 ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
 I_DIM = 2
-<<<<<<< HEAD
 MODEL_SAVE_PATH = "data/saved_models/model"
-=======
->>>>>>> parent of 134b99e... Filter data
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
-
-<<<<<<< HEAD
-def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
-    """
-    
-    """
-    print("Extracting data from tabular variants file...")
-    take_cols = ["Sample", "POS", "REF", "ALT", "AF"]
-    by_sample_dataframe = pd.read_csv(path, sep="\t")
-    by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
-    samples_dict = dict()
-    for idx in range(len(by_sample_dataframe_take_cols)):
-        sample_row = by_sample_dataframe_take_cols.take([idx])
-        sample_name = sample_row["Sample"].values[0]
-        variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
-        if sample_name not in samples_dict:
-            samples_dict[sample_name] = list()
-        samples_dict[sample_name].append(variant)
-    assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == "SRR11953670"]) == len(samples_dict["SRR11953670"])
-    utils.save_as_json("data/samples_dict.json", samples_dict)
-    return samples_dict
-=======
 
 def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
     file_names = glob.glob(path)
@@ -89,7 +58,6 @@ def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
     utils.save_as_json("data/samples.json", samples)
     #post_processing.pre_viz(samples)
     return samples
->>>>>>> parent of 134b99e... Filter data
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     s_names = list()
@@ -106,8 +74,6 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
     tr_transformed_samples = tf_variants.get_variants(train_data, "train")
-    
-    
     
     print("Test data...")
     te_transformed_samples = tf_variants.get_variants(test_data, "test")
@@ -132,8 +98,6 @@ def balance_train_data(train_data, batch_size):
         print(rand_af)
     
         print("-------------------")
-    
-    
 
 def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
 
