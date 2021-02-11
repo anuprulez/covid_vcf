@@ -19,7 +19,7 @@ def transform_integers(train_data, test_data):
     scaler = MinMaxScaler()
     tr_feature = feature_reshape(train_data[:, 0])
     
-    print(min(tr_feature), max(tr_feature))
+    #print(min(tr_feature), max(tr_feature))
     
     
     
