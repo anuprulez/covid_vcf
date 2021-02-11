@@ -18,14 +18,20 @@ def read_json(path):
 def transform_integers(train_data, test_data):
     scaler = MinMaxScaler()
     tr_feature = feature_reshape(train_data[:, 0])
+    
+    print(min(tr_feature), max(tr_feature))
+    
+    
+    
     scaler.fit(tr_feature)
     tr_feature_transformed = scaler.transform(tr_feature)
+    print(min(tr_feature_transformed), max(tr_feature_transformed))
     train_data_transformed = np.hstack((tr_feature_transformed, train_data[:, 1:]))
     
     te_feature = feature_reshape(test_data[:, 0])
     te_feature_transformed = scaler.transform(te_feature)
     test_data_transformed = np.hstack((te_feature_transformed, test_data[:, 1:]))
-    return train_data_transformed, test_data_transformed
+    return train_data_transformed, test_data_transformed, scaler
 
 
 def encode_integers(embedder, features):
