@@ -19,9 +19,15 @@ import utils
 
 
 SEED = 32000
+<<<<<<< HEAD
 N_FILES = 1000
 N_EPOCHS = 50
 BATCH_SIZE = 30
+=======
+N_FILES = 200
+N_EPOCHS = 100
+BATCH_SIZE = 256
+>>>>>>> parent of 134b99e... Filter data
 LR = 1e-4
 TR_TE_SPLIT = 0.2
 
@@ -29,11 +35,15 @@ REF_DIM = 5
 ALT_1_DIM = 5
 ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
 I_DIM = 2
+<<<<<<< HEAD
 MODEL_SAVE_PATH = "data/saved_models/model"
+=======
+>>>>>>> parent of 134b99e... Filter data
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
+<<<<<<< HEAD
 def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
     """
     
@@ -53,6 +63,33 @@ def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
     assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == "SRR11953670"]) == len(samples_dict["SRR11953670"])
     utils.save_as_json("data/samples_dict.json", samples_dict)
     return samples_dict
+=======
+
+def read_files(path="data/sars-cov2.variants/*.gz", n_max_file=N_FILES):
+    file_names = glob.glob(path)
+    print("Total files: {}".format(str(len(file_names))))
+    random.seed(SEED)
+    random.shuffle(file_names)
+    samples = dict()
+    print("Preparing variants...")
+    for idx in range(n_max_file):
+        file_path = file_names[idx]
+        file_name = file_path.split('/')[-1]
+        df = allel.vcf_to_dataframe(file_path)
+        callset = allel.read_vcf(file_path, fields=['AF'])
+        try:
+            AF = callset['variants/AF'][:, 0]
+            samples[file_name] = list()
+            for idx, i in enumerate(df["POS"].tolist()):
+                variant = dict()
+                variant[i] = "{}>{}>{}>{}".format(df["REF"][idx], df["ALT_1"][idx], df["QUAL"][idx], AF[idx])
+                samples[file_name].append(variant)
+        except Exception as ex:
+            continue
+    utils.save_as_json("data/samples.json", samples)
+    #post_processing.pre_viz(samples)
+    return samples
+>>>>>>> parent of 134b99e... Filter data
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     s_names = list()
