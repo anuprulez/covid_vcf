@@ -21,8 +21,8 @@ import utils
 SEED = 32000
 N_FILES = 1000
 N_EPOCHS = 100
-BATCH_SIZE = 32
-LR = 1e-5
+BATCH_SIZE = 64
+LR = 1e-4
 TR_TE_SPLIT = 0.2
 
 REF_DIM = 5
@@ -34,8 +34,11 @@ MODEL_SAVE_PATH = "data/saved_models/model"
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
+BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv"
+COG_20201120 = "data/boston_vcf/cog_20201120_by_sample.tsv"
 
-def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
+
+def read_files(path=COG_20201120, n_max_file=N_FILES):
     """
     
     """
@@ -44,14 +47,16 @@ def read_files(path="data/boston_vcf/bos_by_sample.tsv", n_max_file=N_FILES):
     by_sample_dataframe = pd.read_csv(path, sep="\t")
     by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
     samples_dict = dict()
+    sample_name = ""
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         sample_name = sample_row["Sample"].values[0]
         variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
+        sample_name = sample_row["Sample"].values[0] 
         if sample_name not in samples_dict:
             samples_dict[sample_name] = list()
         samples_dict[sample_name].append(variant)
-    assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == "SRR11953670"]) == len(samples_dict["SRR11953670"])
+    assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == sample_name]) == len(samples_dict[sample_name])
     utils.save_as_json("data/samples_dict.json", samples_dict)
     return samples_dict
 
@@ -133,35 +138,44 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     print(test_features.shape)
 
     var_categories = get_variants_categories(training_features)
-    #print(var_categories)
-    #_ = balance_var(train_data, var_categories, batch_size)
-    #_ = balance_var(training_features, var_categories, batch_size)
-    #sys.exit()
-    
+
+    tr_iter = int(training_features.shape[0] / float(batch_size))
+    '''print("Balancing training batches...")
+    balanced_training_features = list()
+    for i in range(0, tr_iter):
+        bal_tr = balance_var(training_features, var_categories, batch_size)
+        balanced_training_features.append(bal_tr)
+    balanced_training_features = np.asarray(balanced_training_features)'''
+
     tr_epo_loss = np.zeros((num_epochs, 1))
     te_epo_loss = np.zeros((num_epochs, 1))
     print("Start training...")
     autoencoder = setup_network.Autoencoder(ORIG_DIM, I_DIM)
-    optimizer = tf.optimizers.Adam(learning_rate=LR)
+    optimizer = tf.keras.optimizers.RMSprop(learning_rate=LR)
+    #tf.keras.optimizers.SGD(learning_rate=LR)
+    #tf.optimizers.Adam(learning_rate=LR)
     steps = training_features.shape[0] / float(batch_size)
     global_step = tf.Variable(0)
-    tr_iter = int(training_features.shape[0] / float(batch_size))
+    
+    rand_pos = np.random.randint(test_features.shape[0])
     for epoch in range(num_epochs):
         tr_loss = list()
         te_loss = list()
-        #for x in range(0, len(training_features), batch_size):
-        #x_inp = training_features[x : x + batch_size]
-        for i in range(0, tr_iter):
-            x_inp = balance_var(training_features, var_categories, batch_size)
+        for x in range(0, len(training_features), batch_size):
+            #for x in range(0, len(training_features), batch_size):
+            #x_inp = training_features[x : x + batch_size]
+            #for i in range(0, tr_iter):
+            x_inp = training_features[x : x + batch_size]
+            #x_inp = balance_var(training_features, var_categories, batch_size)
             #sys.exit()
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
             c_tr_loss = autoencoder.loss(x_inp, reconstruction)
             c_te_loss = autoencoder.loss(test_features, autoencoder(test_features))
-            print(c_tr_loss, c_te_loss)
+            #print(c_tr_loss, c_te_loss)
             tr_loss.append(c_tr_loss)
             te_loss.append(c_te_loss)
-        rand_pos = np.random.randint(test_features.shape[0])
+        
         print(test_features[rand_pos,:])
         print()
         print(autoencoder(test_features)[rand_pos,:].numpy())
@@ -181,7 +195,7 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     h5f.create_dataset('test_data', data=test_features)
     #low_dim_test_predictions = autoencoder.encoder(test_features)
     #post_processing.transform_predictions(low_dim_test_predictions)
-    post_processing.plot_losses()
+    #post_processing.plot_losses()
     #post_processing.plot_true_pred(test_features, autoencoder(test_features))
 
 

@@ -12,7 +12,7 @@ import utils
 
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, intermediate_dim, f_h=8, s_h=4):
+    def __init__(self, intermediate_dim, f_h=4, s_h=4):
         super(Encoder, self).__init__()
 
         self.hidden_layer1 = tf.keras.layers.Dense(
@@ -20,24 +20,25 @@ class Encoder(tf.keras.layers.Layer):
             activation=tf.nn.relu,
         )
 
-        self.hidden_layer2 = tf.keras.layers.Dense(
+        '''self.hidden_layer2 = tf.keras.layers.Dense(
             units=s_h,
             activation=tf.nn.relu,
-        )
+        )'''
 
         self.output_layer = tf.keras.layers.Dense(
             units=intermediate_dim,
-            activation=tf.nn.relu
+            activation=tf.nn.relu,
+            activity_regularizer=tf.keras.regularizers.L1L2(l1=0.01, l2=0.01)
         )
 
     def call(self, input_features):
         a_f_h = self.hidden_layer1(input_features)
-        a_s_h = self.hidden_layer2(a_f_h)
-        return self.output_layer(a_s_h)
+        #a_s_h = self.hidden_layer2(a_f_h)
+        return self.output_layer(a_f_h)
 
 
 class Decoder(tf.keras.layers.Layer):
-    def __init__(self, orig_dim, f_h=4, s_h=8):
+    def __init__(self, orig_dim, f_h=4, s_h=4):
         super(Decoder, self).__init__()
         
         self.hidden_layer1 = tf.keras.layers.Dense(
@@ -45,10 +46,10 @@ class Decoder(tf.keras.layers.Layer):
             activation=tf.nn.relu,
         )
         
-        self.hidden_layer2 = tf.keras.layers.Dense(
+        '''self.hidden_layer2 = tf.keras.layers.Dense(
             units=s_h,
             activation=tf.nn.relu,
-        )
+        )'''
         
         self.output_layer = tf.keras.layers.Dense(
             units=orig_dim,
@@ -57,8 +58,8 @@ class Decoder(tf.keras.layers.Layer):
 
     def call(self, encoded):
         a_f_h = self.hidden_layer1(encoded)
-        a_s_h = self.hidden_layer2(a_f_h)
-        return self.output_layer(a_s_h)
+        #a_s_h = self.hidden_layer2(a_f_h)
+        return self.output_layer(a_f_h)
 
 
 class Autoencoder(tf.keras.Model):
@@ -72,7 +73,7 @@ class Autoencoder(tf.keras.Model):
         return self.decoder(code)
         
     def loss(self, x, x_pred):
-       return tf.math.reduce_mean(tf.losses.binary_crossentropy(x, x_pred))
+       return tf.math.reduce_mean(tf.losses.binary_crossentropy(x, x_pred)) #tf.losses.mean_squared_error(x, x_pred #tf.losses.binary_crossentropy(x, x_pred)
 
     def grad(self, model, inputs):
         with tf.GradientTape() as tape:
