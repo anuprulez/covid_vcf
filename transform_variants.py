@@ -60,7 +60,7 @@ class TransformVariants:
         float_encoded[float_encoded == 4] = 0.00 # anything else
         return float_encoded
 
-    def transform_variants(self, variants, n_features=2, max_len_ref=10, max_len_alt=5):
+    def transform_variants(self, variants, n_features=2, max_len_ref=5, max_len_alt=2):
         encoded_sample = list()
         for index, item in enumerate(variants):
             ref_var = item.split(">")

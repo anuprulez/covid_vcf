@@ -25,9 +25,10 @@ BATCH_SIZE = 32
 LR = 1e-5
 TR_TE_SPLIT = 0.2
 
-REF_DIM = 10
-ALT_1_DIM = 5
-ORIG_DIM = 2 + REF_DIM + ALT_1_DIM
+REF_DIM = 5
+ALT_1_DIM = 2
+POS_AF = 2
+ORIG_DIM = POS_AF + REF_DIM + ALT_1_DIM
 I_DIM = 2
 MODEL_SAVE_PATH = "data/saved_models/model"
 
@@ -66,7 +67,7 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     
     #var_freq = post_processing.pre_viz(train_data)
     
-    var_freq = post_processing.pre_viz(test_data)
+    #var_freq = post_processing.pre_viz(test_data)
     
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
@@ -98,6 +99,25 @@ def balance_train_data(train_data, batch_size, scaler):
     return balanced_tr_data
 
 
+def get_variants_categories(train_data):
+    var_categories = list()
+    for item in train_data:
+        var_name = utils.get_var(item, POS_AF, REF_DIM)
+        var_categories.append(var_name)
+    return list(set(var_categories))
+    
+def balance_var(train_data, var_categories, batch_size):
+    balanced_tr_data = list()
+    while len(balanced_tr_data) < batch_size:
+        rand_var = random.choice(var_categories)
+        for i, item in enumerate(train_data):
+            var_n = utils.get_var(item, POS_AF, REF_DIM)
+            if var_n == rand_var:
+                balanced_tr_data.append(item)
+                break
+    return np.asarray(balanced_tr_data)
+
+
 def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
 
     training_features = np.asarray(train_data)
@@ -111,6 +131,13 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
     print(training_features.shape)
     print(test_features.shape)
+
+    var_categories = get_variants_categories(training_features)
+    #print(var_categories)
+    #_ = balance_var(train_data, var_categories, batch_size)
+    #_ = balance_var(training_features, var_categories, batch_size)
+    #sys.exit()
+    
     tr_epo_loss = np.zeros((num_epochs, 1))
     te_epo_loss = np.zeros((num_epochs, 1))
     print("Start training...")
@@ -122,15 +149,16 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     for epoch in range(num_epochs):
         tr_loss = list()
         te_loss = list()
-        for x in range(0, len(training_features), batch_size):
-            x_inp = training_features[x : x + batch_size]
-            #for i in range(0, tr_iter):
-            #x_inp = balance_train_data(training_features, batch_size, scaler)
+        #for x in range(0, len(training_features), batch_size):
+        #x_inp = training_features[x : x + batch_size]
+        for i in range(0, tr_iter):
+            x_inp = balance_var(training_features, var_categories, batch_size)
             #sys.exit()
             loss_value, grads, reconstruction = autoencoder.grad(autoencoder, x_inp)
             optimizer.apply_gradients(zip(grads, autoencoder.trainable_variables), global_step)
             c_tr_loss = autoencoder.loss(x_inp, reconstruction)
             c_te_loss = autoencoder.loss(test_features, autoencoder(test_features))
+            print(c_tr_loss, c_te_loss)
             tr_loss.append(c_tr_loss)
             te_loss.append(c_te_loss)
         rand_pos = np.random.randint(test_features.shape[0])

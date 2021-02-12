@@ -152,9 +152,7 @@ def transform_predictions(pred_test):
 def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
     #Initialize the class object
     kmeans = KMeans(n_clusters=N_C)
-    
-    #dbscan_clusters = DBSCAN(eps=1e-2, min_samples=50).fit(features)
-    
+
     #predict the labels of clusters
     cluster_labels = kmeans.fit_predict(features)
     colors = list()

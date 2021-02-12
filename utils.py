@@ -63,3 +63,11 @@ def read_txt(file_path):
         if ln not in ['']:
             loss.append(float(ln))
     return loss
+    
+def get_var(item, POS_AF=2, REF_DIM=10):
+    ref = item[POS_AF: POS_AF + REF_DIM]
+    alt = item[POS_AF + REF_DIM:]
+    get_ref_non_0 = ",".join([str(i) for i in ref[np.where(ref!=0)]])
+    get_alt_non_0 = ",".join([str(i) for i in alt[np.where(alt!=0)]])
+    var_name = "{}>{}".format(get_ref_non_0, get_alt_non_0)
+    return var_name
