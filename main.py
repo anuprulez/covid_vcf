@@ -1,7 +1,7 @@
 import time
 import sys
 import os
-import allel
+#import allel
 import gzip
 import glob
 import random
@@ -16,6 +16,7 @@ import transform_variants
 import setup_network
 import post_processing
 import utils
+import fetch_clades_mutations
 
 
 SEED = 32000
@@ -57,8 +58,9 @@ def read_files(path=COG_20201120, n_max_file=N_FILES):
             samples_dict[sample_name] = list()
         samples_dict[sample_name].append(variant)
     assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == sample_name]) == len(samples_dict[sample_name])
-    utils.save_as_json("data/samples_dict.json", samples_dict)
+    utils.save_as_json("data/samples_dict.json", samples_dict)    
     return samples_dict
+    
 
 def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     s_names = list()
@@ -201,9 +203,9 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
 if __name__ == "__main__":
     start_time = time.time()
-    samples = read_files()
-    tr_data, te_data = split_format_variants(samples)
-    train_autoencoder(tr_data, te_data)
-
+    #samples = read_files()
+    #tr_data, te_data = split_format_variants(samples)
+    #train_autoencoder(tr_data, te_data)
+    fetch_clades_mutations.get_nuc_clades()
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

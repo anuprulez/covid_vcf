@@ -1,5 +1,7 @@
 import json
 
+CLADES_PATH = "data/clades/samples_clades_nuc.json"
+
 
 def read_phylogenetic_data(json_file="data/clades/ncov_global_2021-01-27_17-42.json"):
     with open(json_file, "r") as fp:
@@ -7,7 +9,7 @@ def read_phylogenetic_data(json_file="data/clades/ncov_global_2021-01-27_17-42.j
     tree = data["tree"]
     clade_info = dict()
     recursive_branch(tree, clade_info)
-    with open("data/clades/samples_clades_nuc.json", "w") as fread:
+    with open(CLADES_PATH, "w") as fread:
         fread.write(json.dumps(clade_info))
 
 
@@ -30,6 +32,39 @@ def recursive_branch(obj, clade_info):
             
     else:
         return None
+        
+def nuc_parser(lst_nuc):
+    parsed_nuc = list()
+    last_pos = None
+    for i, item in enumerate(lst_nuc):
+        ref_pos_alt = [char for char in item]
+        ref = ref_pos_alt[0]
+        alt = ref_pos_alt[-1]
+        pos = "".join(ref_pos_alt[1:len(ref_pos_alt) - 1])
+        if last_pos is not None:
+            if last_pos + 1 == pos and :
+                continue
+        
+        last_pos = pos
+        print(i, item, ref_pos_alt, ref, pos, alt)
+    
+        
+def get_nuc_clades():
+    with open(CLADES_PATH, "r") as cf:
+        clades = json.loads(cf.read())
+    clades_nuc = dict()
+    for key in clades:
+        clade_name = clades[key][0]["value"]
+        clade_nuc = clades[key][1]["nuc"]
+        #print(key, clades[key], clade_name, clade_nuc)
+        if clade_name not in clades_nuc:
+            clades_nuc[clade_name] = list()
+        parsed_nuc = nuc_parser(clade_nuc)
+        clades_nuc[clade_name].extend(parsed_nuc)
+        #print("-------")
+    #print("===========================")
+    print(clades_nuc)
+
 
 
 
