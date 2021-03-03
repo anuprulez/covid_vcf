@@ -32,16 +32,16 @@ def recursive_branch(obj, clade_info):
             
     else:
         return None
-        
+
+
 def nuc_parser(lst_nuc):
     parsed_nuc = list()
+    repeated_nuc = list()
     prev_pos = 0
     chained_ref = list()
     chained_alt = list()
     chained_pos = list()
     for i, item in enumerate(lst_nuc):
-        #print(prev_pos)
-        
         ref_pos_alt = [char for char in item]
         c_ref = ref_pos_alt[0]
         c_alt = ref_pos_alt[-1]
@@ -49,41 +49,24 @@ def nuc_parser(lst_nuc):
         if c_ref != "-" and c_alt != "-":
             p_nuc = "{}>{}>{}".format(c_ref, c_pos, c_alt)
             parsed_nuc.append(p_nuc)
+            if len(repeated_nuc) > 0:
+               parsed_nuc.append(repeated_nuc[-1])
+               repeated_nuc = list()
         else:
             chained_ref.append(c_ref)
             chained_alt.append(c_alt)
             chained_pos.append(str(c_pos))
             if prev_pos == c_pos - 1:
-                print("Inside else if")
-                print(prev_pos, c_pos)
-                print(len(chained_ref))
-                print("====")
-                if i == len(lst_nuc) - 1:
-                    print("End of list")
-                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
-                    parsed_nuc.append(p_nuc)
-                    chained_ref = list()
-                    chained_alt = list()
-                    chained_pos = list()
-            else:
-                if len(chained_ref) > 0:
-                    print("Inside else")
-                    print(len(chained_ref))
-                    assert len(chained_ref) == len(chained_pos)
-                    assert len(chained_ref) == len(chained_alt)
-                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
-                    parsed_nuc.append(p_nuc)
-                    chained_ref = list()
-                    chained_alt = list()
-                    chained_pos = list()
-                else:
-                    p_nuc = "{}>{}>{}".format(c_ref, c_pos, c_alt)
-                    parsed_nuc.append(p_nuc)
-        prev_pos = c_pos       
-        #print(i, item, ref_pos_alt, ref, pos, alt)
+                 p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+                 repeated_nuc.append(p_nuc)
+            if i == len(lst_nuc) - 1 and len(repeated_nuc) > 0:
+                parsed_nuc.append(repeated_nuc[-1])
+        prev_pos = c_pos
+        
+    #parsed_nuc.append(p_nuc)
     return list(set(parsed_nuc))
     
-        
+
 def get_nuc_clades():
     with open(CLADES_PATH, "r") as cf:
         clades = json.loads(cf.read())
