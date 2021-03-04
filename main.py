@@ -39,7 +39,7 @@ BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv"
 COG_20201120 = "data/boston_vcf/cog_20201120_by_sample.tsv"
 
 
-def read_files(path=COG_20201120, n_max_file=N_FILES):
+def read_files(clades_mutations, path=BOSTON_DATA_PATH):
     """
     
     """
@@ -52,12 +52,15 @@ def read_files(path=COG_20201120, n_max_file=N_FILES):
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         sample_name = sample_row["Sample"].values[0]
-        variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
-        sample_name = sample_row["Sample"].values[0] 
-        if sample_name not in samples_dict:
-            samples_dict[sample_name] = list()
-        samples_dict[sample_name].append(variant)
-    assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == sample_name]) == len(samples_dict[sample_name])
+        check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])
+        # exclude signature mutations from known clades such as 19A, 19B .. in search of novel mutations.
+        if check_var not in clades_mutations:
+            variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
+            sample_name = sample_row["Sample"].values[0] 
+            if sample_name not in samples_dict:
+                samples_dict[sample_name] = list()
+            samples_dict[sample_name].append(variant)
+    #assert len(by_sample_dataframe_take_cols[by_sample_dataframe_take_cols["Sample"] == sample_name]) == len(samples_dict[sample_name])
     utils.save_as_json("data/samples_dict.json", samples_dict)    
     return samples_dict
     
@@ -203,9 +206,10 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
 
 if __name__ == "__main__":
     start_time = time.time()
-    #samples = read_files()
-    #tr_data, te_data = split_format_variants(samples)
+    u_all_clades_mutations = fetch_clades_mutations.get_nuc_clades()
+    samples = read_files(u_all_clades_mutations)
+    tr_data, te_data = split_format_variants(samples)
     #train_autoencoder(tr_data, te_data)
-    fetch_clades_mutations.get_nuc_clades()
+    
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))
