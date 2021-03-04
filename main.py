@@ -49,6 +49,7 @@ def read_files(clades_mutations, path=BOSTON_DATA_PATH):
     by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
     samples_dict = dict()
     sample_name = ""
+    #clades_mutations = []
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         sample_name = sample_row["Sample"].values[0]
