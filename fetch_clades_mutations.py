@@ -53,26 +53,32 @@ def nuc_parser(lst_nuc):
             parsed_nuc.append(p_nuc)
             if len(repeated_nuc) > 0:
                parsed_nuc.append(repeated_nuc[-1])
-               repeated_nuc = list()
+               repeated_nuc.clear()
+               chained_ref.clear()
+               chained_alt.clear()
+               chained_pos.clear()
         else:
             chained_ref.append(c_ref)
             chained_alt.append(c_alt)
             chained_pos.append(str(c_pos))
+            p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+            repeated_nuc.append(p_nuc)
             if i < len(lst_nuc) - 1:
                 next_item = lst_nuc[i+1]
                 n_ref, n_alt, n_pos = get_item(next_item)
                 if n_pos - 1 == c_pos:
-                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
                     repeated_nuc.append(p_nuc)
                 else:
-                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
-                    repeated_nuc.append(p_nuc)
-                    if len(repeated_nuc) > 0:
-                        parsed_nuc.append(repeated_nuc[-1])
+                    parsed_nuc.append(repeated_nuc[-1])
+                    repeated_nuc.clear()
+                    chained_ref.clear()
+                    chained_alt.clear()
+                    chained_pos.clear()
             else:
-                p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
-                repeated_nuc.append(p_nuc)
-                parsed_nuc.append(repeated_nuc[-1])
+                if len(repeated_nuc) > 0:
+                    parsed_nuc.append(repeated_nuc[-1])
+                else:
+                    parsed_nuc.append(p_nuc)
     return list(set(parsed_nuc))
 
 
