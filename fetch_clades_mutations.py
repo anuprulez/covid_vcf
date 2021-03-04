@@ -33,6 +33,12 @@ def recursive_branch(obj, clade_info):
     else:
         return None
 
+def get_item(item):
+    ref_pos_alt = [char for char in item]
+    ref = ref_pos_alt[0]
+    alt = ref_pos_alt[-1]
+    pos = int("".join(ref_pos_alt[1:len(ref_pos_alt) - 1]))
+    return ref, alt, pos
 
 def nuc_parser(lst_nuc):
     parsed_nuc = list()
@@ -42,10 +48,7 @@ def nuc_parser(lst_nuc):
     chained_alt = list()
     chained_pos = list()
     for i, item in enumerate(lst_nuc):
-        ref_pos_alt = [char for char in item]
-        c_ref = ref_pos_alt[0]
-        c_alt = ref_pos_alt[-1]
-        c_pos = int("".join(ref_pos_alt[1:len(ref_pos_alt) - 1]))
+        c_ref, c_alt, c_pos = get_item(item)
         if c_ref != "-" and c_alt != "-":
             p_nuc = "{}>{}>{}".format(c_ref, c_pos, c_alt)
             parsed_nuc.append(p_nuc)
@@ -56,16 +59,31 @@ def nuc_parser(lst_nuc):
             chained_ref.append(c_ref)
             chained_alt.append(c_alt)
             chained_pos.append(str(c_pos))
-            if prev_pos == c_pos - 1:
-                 p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
-                 repeated_nuc.append(p_nuc)
-            if i == len(lst_nuc) - 1 and len(repeated_nuc) > 0:
-                parsed_nuc.append(repeated_nuc[-1])
+            if i < len(lst_nuc) - 1:
+                next_item = lst_nuc[i+1]
+                n_ref, n_alt, n_pos = get_item(next_item)
+                if n_pos - 1 == c_pos:
+                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+                    repeated_nuc.append(p_nuc)
+                else:
+                    if len(repeated_nuc) > 0:
+                         parsed_nuc.append(repeated_nuc[-1])
+            else:
+                if len(repeated_nuc) > 0:
+                    parsed_nuc.append(repeated_nuc[-1])
+            #if prev_pos == c_pos - 1:
+            #     p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+            #     repeated_nuc.append(p_nuc)
+            #if i == len(lst_nuc) - 1 and len(repeated_nuc) > 0:
+            #    parsed_nuc.append(repeated_nuc[-1])
+            #print(chained_ref)
+            #print(chained_pos)
+            #print("----------------")
         prev_pos = c_pos
-        
+
     #parsed_nuc.append(p_nuc)
     return list(set(parsed_nuc))
-    
+
 
 def get_nuc_clades():
     with open(CLADES_PATH, "r") as cf:
@@ -77,7 +95,8 @@ def get_nuc_clades():
         if clade_name not in clades_nuc:
             clades_nuc[clade_name] = list()
         #print(clade_name)
-        if clade_name == "20F":
+        if clade_name in ["19A"]: #, "19B", "20F"
+            print(clade_name)
             print(clade_nuc)
             parsed_nuc = nuc_parser(clade_nuc)
             print()
@@ -87,7 +106,3 @@ def get_nuc_clades():
     #print(clades_nuc)
     with open("data/clades/parsed_nuc.json", "w") as fread:
         fread.write(json.dumps(clades_nuc))
-
-
-
-
