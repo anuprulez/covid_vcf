@@ -49,7 +49,7 @@ def nuc_parser(lst_nuc):
     for i, item in enumerate(lst_nuc):
         c_ref, c_alt, c_pos = get_item(item)
         if c_ref != "-" and c_alt != "-":
-            p_nuc = "{}>{}>{}".format(c_ref, c_pos, c_alt)
+            p_nuc = "{}{}{}".format(c_ref, c_pos, c_alt)
             parsed_nuc.append(p_nuc)
             if len(repeated_nuc) > 0:
                parsed_nuc.append(repeated_nuc[-1])
@@ -61,7 +61,7 @@ def nuc_parser(lst_nuc):
             chained_ref.append(c_ref)
             chained_alt.append(c_alt)
             chained_pos.append(str(c_pos))
-            p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+            p_nuc = "{}{}{}".format("".join(chained_ref), "".join(chained_pos[0]), "".join(chained_alt[0]))
             repeated_nuc.append(p_nuc)
             if i < len(lst_nuc) - 1:
                 next_item = lst_nuc[i+1]
