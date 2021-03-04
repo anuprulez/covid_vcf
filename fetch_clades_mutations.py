@@ -66,11 +66,24 @@ def nuc_parser(lst_nuc):
                     p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
                     repeated_nuc.append(p_nuc)
                 else:
+                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+                    repeated_nuc.append(p_nuc)
+                    #parsed_nuc.append(p_nuc)'''
                     if len(repeated_nuc) > 0:
-                         parsed_nuc.append(repeated_nuc[-1])
+                        parsed_nuc.append(repeated_nuc[-1])
             else:
-                if len(repeated_nuc) > 0:
+                
+                p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+                repeated_nuc.append(p_nuc)
+                print("In else")
+                print(p_nuc)
+                print("==================")
+                parsed_nuc.append(repeated_nuc[-1])
+                '''if len(repeated_nuc) > 0:
                     parsed_nuc.append(repeated_nuc[-1])
+                else:
+                    p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
+                    parsed_nuc.append(p_nuc)'''
             #if prev_pos == c_pos - 1:
             #     p_nuc = "{}>{}>{}".format("".join(chained_ref), " ".join(chained_pos), "".join(chained_alt))
             #     repeated_nuc.append(p_nuc)
