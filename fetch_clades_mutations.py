@@ -64,8 +64,8 @@ def recursive_branch(obj, clade_info, all_sample_names):
                         branch_nuc.extend(item["branch_attrs"]["mutations"]["nuc"])
                         branch_nuc = list(set(branch_nuc))
                         clade_info[sample_name].append(item["node_attrs"]["clade_membership"])
-                        clade_info[sample_name].append({"nuc": item["branch_attrs"]["mutations"]["nuc"]})
-                        #clade_info[sample_name].append({"nuc": branch_nuc})
+                        #clade_info[sample_name].append({"nuc": item["branch_attrs"]["mutations"]["nuc"]})
+                        clade_info[sample_name].append({"nuc": branch_nuc})
     else:
         return None
 

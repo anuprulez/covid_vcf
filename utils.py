@@ -13,6 +13,13 @@ def read_json(path):
     with open(path, 'r') as fp:
         f_content = json.loads(fp.readline())
         return f_content
+        
+def include_mutations(mutations, include_list):
+    f_mutations = list()
+    for clade in mutations:
+        if clade in include_list:
+            f_mutations.extend(mutations[clade])
+    return f_mutations
 
 
 def transform_integers(train_data, test_data):
