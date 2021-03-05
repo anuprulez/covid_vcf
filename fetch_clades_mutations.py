@@ -1,35 +1,49 @@
 import json
 
 CLADES_PATH = "data/clades/samples_clades_nuc.json"
+GISAID_JAN = "data/clades/jan/ncov_global_2021-01-27_17-42.json"
+GISAID_MAR = "data/clades/march/ncov_global/ncov_global.json"
 
+# Test sample names: BurkinaFaso/4307/2020
+# Pakistan/Gilgit1/2020
+#
 
-def read_phylogenetic_data(json_file="data/clades/ncov_global_2021-01-27_17-42.json"):
+def read_phylogenetic_data(json_file=GISAID_MAR):
     with open(json_file, "r") as fp:
         data = json.loads(fp.read())
     tree = data["tree"]
     clade_info = dict()
-    recursive_branch(tree, clade_info)
+    all_sample_names = list()
+    recursive_branch(tree, clade_info, all_sample_names)
     with open(CLADES_PATH, "w") as fread:
         fread.write(json.dumps(clade_info))
 
 
-def recursive_branch(obj, clade_info):
+def recursive_branch(obj, clade_info, all_sample_names):
     if "branch_attrs" in obj:
         branch_attr = obj["branch_attrs"]
         if "children" in obj:
-            child = obj["children"]
-            for item in child:
-                if "name" in item and "branch_attrs" in item:
-                    item_branch_attr = item["branch_attrs"]
-                    if "mutations" in item_branch_attr:
-                        if "nuc" in item_branch_attr["mutations"]:
-                            if "node_attrs" in item:
-                                if "clade_membership" in item["node_attrs"]:
-                                    clade_info[item["name"]] = list()
-                                    clade_info[item["name"]].append(item["node_attrs"]["clade_membership"])
-                                    clade_info[item["name"]].append({"nuc": item_branch_attr["mutations"]["nuc"]})
-                recursive_branch(item, clade_info)
-            
+            children = obj["children"]
+            for item in children:
+                if "children" in item:
+                    recursive_branch(item, clade_info, all_sample_names)
+                else:
+                    # retrieve nuc from branch if available
+                    #branch_nuc = list()
+                    #if "branch_attrs" in obj:
+                    #    if "mutations" in obj["branch_attrs"]:
+                    #        if "nuc" in obj["branch_attrs"]["mutations"]:
+                    #            branch_nuc = obj["branch_attrs"]["mutations"]["nuc"]
+                    all_sample_names.append(item["name"])
+                    if "nuc" in item["branch_attrs"]["mutations"]:
+                        sample_name = item["name"]
+                        if sample_name not in clade_info:
+                            clade_info[sample_name] = list()
+                        # add nuc from branch to all children if available
+                        #branch_nuc.extend(item["branch_attrs"]["mutations"]["nuc"])
+                        #branch_nuc = list(set(branch_nuc))
+                        clade_info[sample_name].append(item["node_attrs"]["clade_membership"])
+                        clade_info[sample_name].append({"nuc": item["branch_attrs"]["mutations"]["nuc"]})
     else:
         return None
 
@@ -104,3 +118,7 @@ def get_nuc_clades():
     with open("data/clades/u_all_clades_mutations.json", "w") as fread:
         fread.write(json.dumps(u_all_clades_mutations))
     return u_all_clades_mutations
+    
+    
+if __name__ == "__main__":
+    read_phylogenetic_data()
