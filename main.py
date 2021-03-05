@@ -11,6 +11,7 @@ import tensorflow as tf
 import numpy as np
 import logging
 import h5py
+from sklearn.cluster import SpectralClustering, DBSCAN
 
 import transform_variants
 import setup_network
@@ -24,7 +25,7 @@ N_FILES = 1000
 N_EPOCHS = 100
 BATCH_SIZE = 64
 LR = 1e-4
-TR_TE_SPLIT = 0.2
+TR_TE_SPLIT = 0.0
 
 REF_DIM = 5
 ALT_1_DIM = 2
@@ -38,7 +39,7 @@ logging.getLogger('tensorflow').setLevel(logging.FATAL)
 BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv"
 COG_20201120 = "data/boston_vcf/cog_20201120_by_sample.tsv"
 #FULL_LIST = ['19A', '20H/501Y.V2', '20A', '20E (EU1)', '20D', '20I/501Y.V1', '20B', '20F', '19B', '20J/501Y.V3', '20G', '20C']
-CLADES_EXCLUDE_LIST = []
+CLADES_EXCLUDE_LIST = ['19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3']
 #CLADES_EXCLUDE_LIST = ['19A'] # '19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3'
 CLADES_MUTATIONS = "data/clades/parsed_nuc_clades.json"
 
@@ -70,6 +71,8 @@ def read_files(path=BOSTON_DATA_PATH):
     utils.save_as_json("data/samples_dict.json", samples_dict)
     print("Clades excluded: {}".format(",".join(CLADES_EXCLUDE_LIST)))
     print("Total samples: {}".format(str(len(samples_dict))))
+    #post_processing.pre_viz(samples_dict)
+    
     return samples_dict
     
 
@@ -84,20 +87,22 @@ def split_format_variants(samples, tr_test_split=TR_TE_SPLIT):
     assert len(train_data) == len(samples) - split_int
     assert len(test_data) == split_int
     
-    #var_freq = post_processing.pre_viz(train_data)
-    
-    #var_freq = post_processing.pre_viz(test_data)
-    
     tf_variants = transform_variants.TransformVariants()
     print("Train data...")
     tr_transformed_samples = tf_variants.get_variants(train_data, "train")
     
-    print("Test data...")
-    te_transformed_samples = tf_variants.get_variants(test_data, "test")
+    #print("Test data...")
+    te_transformed_samples = [] #tf_variants.get_variants(test_data, "test")
     return tr_transformed_samples, te_transformed_samples
-
-
-def balance_train_data(train_data, batch_size, scaler):
+    
+def cluster_variants(data):
+    training_features = np.asarray(data)
+    print(training_features.shape)
+    training_features = training_features.astype('float32')
+    training_features, _, _ = utils.transform_integers(training_features, [])
+    post_processing.transform_predictions(training_features)
+    
+'''def balance_train_data(train_data, batch_size, scaler):
 
     pos_categories = {"0": "0.0-0.2", "1": "0.2-0.4", "2": "0.4-0.6", "3": "0.6-0.8", "4": "0.8-1.0"} 
     #{"0": "0-5000", "1": "5000-10000", "2": "10000-15000", "3": "15000-20000", "4": "20000-25000", "5": "25000-30000"}
@@ -135,6 +140,9 @@ def balance_var(train_data, var_categories, batch_size):
                 balanced_tr_data.append(item)
                 break
     return np.asarray(balanced_tr_data)
+    
+    
+
 
 
 def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rate=LR, num_epochs=N_EPOCHS):
@@ -154,12 +162,12 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     var_categories = get_variants_categories(training_features)
 
     tr_iter = int(training_features.shape[0] / float(batch_size))
-    '''print("Balancing training batches...")
+    print("Balancing training batches...")
     balanced_training_features = list()
     for i in range(0, tr_iter):
         bal_tr = balance_var(training_features, var_categories, batch_size)
         balanced_training_features.append(bal_tr)
-    balanced_training_features = np.asarray(balanced_training_features)'''
+    balanced_training_features = np.asarray(balanced_training_features)
 
     tr_epo_loss = np.zeros((num_epochs, 1))
     te_epo_loss = np.zeros((num_epochs, 1))
@@ -210,13 +218,14 @@ def train_autoencoder(train_data, test_data, batch_size=BATCH_SIZE, learning_rat
     #low_dim_test_predictions = autoencoder.encoder(test_features)
     #post_processing.transform_predictions(low_dim_test_predictions)
     #post_processing.plot_losses()
-    #post_processing.plot_true_pred(test_features, autoencoder(test_features))
+    #post_processing.plot_true_pred(test_features, autoencoder(test_features))'''
 
 
 if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
     tr_data, te_data = split_format_variants(samples)
+    cluster_variants(tr_data)
     #train_autoencoder(tr_data, te_data)
     
     end_time = time.time()

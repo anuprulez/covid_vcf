@@ -8,11 +8,12 @@ import plotly.graph_objects as go
 
 from sklearn.cluster import KMeans
 from sklearn.cluster import DBSCAN
+from sklearn.decomposition import TruncatedSVD
 
 import utils
 
 color_dict = {0: "red", 1: "green", 2: "blue"}
-N_C = 5 #len(color_dict)
+N_C = 3 #len(color_dict)
 
 def pre_viz(samples):
     POS = dict()
@@ -110,12 +111,12 @@ def deserialize(var_lst, sample_name):
     return var_txt, var_pos, var_name, var_af
 
 def transform_predictions(pred_test):
-    test_count_var = utils.read_json("data/test_n_variants.json")
+    train_count_var = utils.read_json("data/train_n_variants.json")
     sample_names = utils.read_json("data/samples_dict.json")
     n_samples = list()
     n_sample_variants = list()
     sample_var_summary = list()
-    pred_test = pred_test.numpy()
+    #pred_test = pred_test.numpy()
     s_name_df = list()
     var_name_df = list()
     var_pos_df = list()
@@ -123,7 +124,7 @@ def transform_predictions(pred_test):
     var_y_df = list()
     var_af_df = list()
     x = 0
-    for i, c_pred in enumerate(test_count_var):
+    for i, c_pred in enumerate(train_count_var):
         idx = list(c_pred.values())[0]
         sample_name = list(c_pred.keys())[0]
         sample_variants = sample_names[sample_name]
@@ -151,16 +152,21 @@ def transform_predictions(pred_test):
 
 def cluster(features, pt_annotations, n_samples, var_name_df, var_pos_df, var_af_df, path_plot_df="data/test_clusters.csv"):
     #Initialize the class object
+    svd = TruncatedSVD(n_components=2, n_iter=7, random_state=42)
+    low_dimensional_features = svd.fit_transform(features)
+    print(low_dimensional_features.shape)
+    
     kmeans = KMeans(n_clusters=N_C)
 
     #predict the labels of clusters
-    cluster_labels = kmeans.fit_predict(features)
+    cluster_labels = kmeans.fit_predict(low_dimensional_features)
+    
     colors = list()
     x = list()
     y = list()
     for i, l in enumerate(cluster_labels):
         colors.append(int(l))
-        pred_val = features[i]
+        pred_val = low_dimensional_features[i]
         x.append(pred_val[0])
         y.append(pred_val[1])
     

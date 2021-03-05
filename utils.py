@@ -28,9 +28,9 @@ def transform_integers(train_data, test_data):
     scaler.fit(tr_feature)
     tr_feature_transformed = scaler.transform(tr_feature)
     train_data_transformed = np.hstack((tr_feature_transformed, train_data[:, 1:]))
-    te_feature = feature_reshape(test_data[:, 0])
-    te_feature_transformed = scaler.transform(te_feature)
-    test_data_transformed = np.hstack((te_feature_transformed, test_data[:, 1:]))
+    te_feature = [] #feature_reshape(test_data[:, 0])
+    te_feature_transformed = [] #scaler.transform(te_feature)
+    test_data_transformed = [] #np.hstack((te_feature_transformed, test_data[:, 1:]))
     return train_data_transformed, test_data_transformed, scaler
 
 
