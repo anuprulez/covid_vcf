@@ -1,19 +1,41 @@
 import json
+import pandas as pd
 
-CLADES_PATH = "data/clades/samples_clades_nuc_jan.json"
-GISAID_JAN = "data/clades/jan/ncov_global_2021-01-27_17-42.json"
-GISAID_MAR = "data/clades/march/ncov_global/ncov_global.json"
+CLADES_PATH = "data/clades/samples_clades_nuc.json"
+GISAID = "data/clades/jan/ncov_global_2021-01-27_17-42.json"
+#GISAID = "data/clades/march/ncov_global/ncov_global.json"
+SAMPLE_CLADE_MUTATION = "data/clades/sample_clade_mutation.csv"
 
-# Test sample names: BurkinaFaso/4307/2020
+
+# Test sample names: 
+# BurkinaFaso/4307/2020
 # Pakistan/Gilgit1/2020
+# PapuaNewGuinea/10/2020
+# PapuaNewGuinea/7/2020
+# Ecuador/USFQ-556/2020
+# India/MH-1-27/2020
 
-def read_phylogenetic_data(json_file=GISAID_JAN):
+
+def to_tabular(clade_info):
+    sample_names = list()
+    clade_names = list()
+    mutations = list()
+    for item in clade_info:
+        sample_names.append(item)
+        clade_names.append(clade_info[item][0]["value"])
+        mutations.append(",".join(clade_info[item][1]["nuc"]))
+    sample_clade_mutation = pd.DataFrame(list(zip(sample_names, clade_names, mutations)), columns=["Samples", "Nextstrain clades", "Mutations"])
+    #sample_clade_mutation = sample_clade_mutation.sort_values(by="Nextstrain clades")
+    sample_clade_mutation.to_csv(SAMPLE_CLADE_MUTATION)
+
+def read_phylogenetic_data(json_file=GISAID):
     with open(json_file, "r") as fp:
         data = json.loads(fp.read())
     tree = data["tree"]
     clade_info = dict()
     all_sample_names = list()
     recursive_branch(tree, clade_info, all_sample_names)
+    to_tabular(clade_info)
     with open(CLADES_PATH, "w") as fread:
         fread.write(json.dumps(clade_info))
 
@@ -42,7 +64,8 @@ def recursive_branch(obj, clade_info, all_sample_names):
                         branch_nuc.extend(item["branch_attrs"]["mutations"]["nuc"])
                         branch_nuc = list(set(branch_nuc))
                         clade_info[sample_name].append(item["node_attrs"]["clade_membership"])
-                        clade_info[sample_name].append({"nuc": branch_nuc})
+                        clade_info[sample_name].append({"nuc": item["branch_attrs"]["mutations"]["nuc"]})
+                        #clade_info[sample_name].append({"nuc": branch_nuc})
     else:
         return None
 
