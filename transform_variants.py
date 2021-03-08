@@ -75,6 +75,5 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 sample = np.hstack(([pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
                 sample = [float(x) for x in sample]
-                print(ref_var, sample)
                 encoded_sample.append(sample)
         return np.asarray(encoded_sample)

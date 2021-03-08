@@ -53,7 +53,6 @@ def read_files(path=BOSTON_DATA_PATH):
     by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
     samples_dict = dict()
     selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
-
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])
@@ -77,7 +76,7 @@ def encode_variants(samples):
     transformed_samples = variants.get_variants(samples, "train")
     features = np.asarray(transformed_samples)
     features = features.astype('float32')
-    #features = utils.transform_integers(features)
+    features = utils.transform_integers(features)
     cluster_variants.transform_variants(features)
     
   
@@ -85,6 +84,5 @@ if __name__ == "__main__":
     start_time = time.time()
     samples = read_files()
     encode_variants(samples)
-    
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))

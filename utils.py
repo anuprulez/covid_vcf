@@ -27,8 +27,6 @@ def deserialize(var_lst, sample_name):
     var_name = list()
     var_af = list()
     for i, item in enumerate(var_lst):
-        print(sample_name, item)
-        print()
         var_split = item.split(">")
         pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
         var_txt += "{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af)
