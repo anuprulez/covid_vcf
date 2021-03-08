@@ -31,6 +31,7 @@ POS_AF = 2
 ORIG_DIM = POS_AF + REF_DIM + ALT_1_DIM
 I_DIM = 2
 MODEL_SAVE_PATH = "data/saved_models/model"
+AF_CUTOFF = 0.8
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -51,16 +52,15 @@ def read_files(path=BOSTON_DATA_PATH):
     by_sample_dataframe = pd.read_csv(path, sep="\t")
     by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
     samples_dict = dict()
-    sample_name = ""
     selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
 
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
-        sample_name = sample_row["Sample"].values[0]
         check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])
+        AF = float(sample_row["AF"].values[0])
         # exclude signature mutations from known clades such as 19A, 19B .. in search of novel mutations.
-        if check_var not in selected_mutations:
-            variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], sample_row["AF"].values[0])
+        if check_var not in selected_mutations and AF < AF_CUTOFF:
+            variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], AF)
             sample_name = sample_row["Sample"].values[0] 
             if sample_name not in samples_dict:
                 samples_dict[sample_name] = list()
@@ -68,7 +68,6 @@ def read_files(path=BOSTON_DATA_PATH):
     utils.save_as_json("data/samples_dict.json", samples_dict)
     print("Clades excluded: {}".format(",".join(CLADES_EXCLUDE_LIST)))
     print("Total samples: {}".format(str(len(samples_dict))))
-    #post_processing.pre_viz(samples_dict)
     return samples_dict
     
 
@@ -77,9 +76,8 @@ def encode_variants(samples):
     variants = transform_variants.TransformVariants()
     transformed_samples = variants.get_variants(samples, "train")
     features = np.asarray(transformed_samples)
-    print(features.shape)
     features = features.astype('float32')
-    features = utils.transform_integers(features)
+    #features = utils.transform_integers(features)
     cluster_variants.transform_variants(features)
     
   
