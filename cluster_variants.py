@@ -32,10 +32,11 @@ def transform_variants(samples_data):
         var_name_df.extend(var_name)
         var_pos_df.extend(var_pos)
         var_af_df.extend(var_af)
-        print(np.repeat(sample_name, idx), var_pos, var_name, var_af)
-        print("---------------")
+        #print(np.repeat(sample_name, idx), var_pos, var_name, var_af)
+        #print(var_name_df)
+        #print("---------------")
     #print(s_name_df, var_name_df, var_pos_df, var_af_df)
-    
+    print(len(s_name_df), len(var_name_df), len(var_pos_df), len(var_af_df))
     cluster(samples_data, s_name_df, var_name_df, var_pos_df, var_af_df)
 
 
@@ -60,29 +61,16 @@ def cluster(features, s_name_df, var_name_df, var_pos_df, var_af_df, path_plot_d
     # DBSCAN(eps=0.5).fit_predict(features)
     clusters = list()
     df_data = list()
+    x = list()
+    y = list()
     for i, l in enumerate(cluster_labels):
         #if l >= 0:
-        
         pred_val = low_dimensional_features[i]
-        #x.append(pred_val[0])
-        #y.append(pred_val[-1])
-        
-        row = []
+        x.append(pred_val[0])
+        y.append(pred_val[-1])
         clusters.append(l)
-        row.append(s_name_df[i])
-        row.append(var_pos_df[i])
-        row.append(var_af_df[i])
-        row.append(pred_val[0])
-        row.append(pred_val[-1])
-        row.append(var_name_df[i])
-        row.append(l)
-        df_data.append(row)
-        #print(row)
-        #print("-----")
-    #print(df_data)  
-    #df_data = [s_name_df, var_pos_df, var_af_df, x, y, var_name_df, clusters]
-    #scatter_df = pd.DataFrame(list(zip(s_name_df, var_pos_df, var_af_df, x, y, var_name_df, clusters)), columns=["sample_name", "POS", "AF", "x", "y", "annotations", "clusters"])
-    scatter_df = pd.DataFrame(df_data, columns=["sample_name", "POS", "AF", "x", "y", "annotations", "clusters"])
+    scatter_df = pd.DataFrame(list(zip(s_name_df, var_pos_df, var_af_df, x, y, var_name_df, clusters)), columns=["sample_name", "POS", "AF", "x", "y", "annotations", "clusters"])
+    #scatter_df = pd.DataFrame(df_data, columns=["sample_name", "POS", "AF", "x", "y", "annotations", "clusters"])
     scatter_df["clusters"] = scatter_df["clusters"].astype(str)
     fig = px.scatter(scatter_df,
         x="x",
@@ -91,11 +79,8 @@ def cluster(features, s_name_df, var_name_df, var_pos_df, var_af_df, path_plot_d
         hover_data=['annotations'],
         size=np.repeat(1, len(clusters))
     )
-    #scatter_df["clusters"] = scatter_df["clusters"].astype(int)
-    print(scatter_df)
-    
-    #sorted_df = scatter_df.sort_values(by="clusters")
-    #print(sorted_df)
-    #scatter_df.to_csv(path_plot_df)
-    #plotly.offline.plot(fig, filename='data/cluster_variants.html')
+    scatter_df["clusters"] = scatter_df["clusters"].astype(int)
+    sorted_df = scatter_df.sort_values(by="clusters")
+    scatter_df.to_csv(path_plot_df)
+    plotly.offline.plot(fig, filename='data/cluster_variants.html')
     #fig.show()

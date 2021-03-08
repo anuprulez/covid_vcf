@@ -29,16 +29,17 @@ class TransformVariants:
             variants = dict()
             l_variants = samples[sample]
             if len(l_variants) > 0:
-                transformed_variants = self.transform_variants(l_variants)
+                transformed_variants, v_list = self.transform_variants(l_variants)
                 encoded_samples.extend(transformed_variants)
                 variants[sample] = len(transformed_variants)
                 sample_n_variants.append(variants)
-                samples_save[sample] = l_variants
+                samples_save[sample] = v_list
                 num_v_sample.append(transformed_variants.shape[0])
             assert np.sum(num_v_sample) == len(encoded_samples)
         print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
 
         utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
+        print(len(samples_save))
         utils.save_as_json("data/{}_all_variants.json".format(typ), samples_save)
         return encoded_samples
 
@@ -64,6 +65,7 @@ class TransformVariants:
 
     def transform_variants(self, variants, n_features=2, max_len_ref=5, max_len_alt=2):
         encoded_sample = list()
+        v_list = list()
         for index, item in enumerate(variants):
             ref_var = item.split(">")
             pos, ref, alt_1, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3]
@@ -76,4 +78,5 @@ class TransformVariants:
                 sample = np.hstack(([pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
                 sample = [float(x) for x in sample]
                 encoded_sample.append(sample)
-        return np.asarray(encoded_sample)
+                v_list.append(item)
+        return np.asarray(encoded_sample), v_list
