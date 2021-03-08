@@ -20,18 +20,29 @@ def include_mutations(mutations, include_list):
         if clade in include_list:
             f_mutations.extend(mutations[clade])
     return f_mutations
+    
+def deserialize(var_lst, sample_name):
+    var_txt = ""
+    var_pos = list()
+    var_name = list()
+    var_af = list()
+    for i, item in enumerate(var_lst):
+        var_split = item.split(">")
+        pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
+        var_txt += "{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af)
+        var_pos.append(pos)
+        var_af.append(af)
+        var_name.append("{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af))
+    return var_txt, var_pos, var_name, var_af
 
 
-def transform_integers(train_data, test_data):
+def transform_integers(train_data):
     scaler = MinMaxScaler()
     tr_feature = feature_reshape(train_data[:, 0])
     scaler.fit(tr_feature)
     tr_feature_transformed = scaler.transform(tr_feature)
     train_data_transformed = np.hstack((tr_feature_transformed, train_data[:, 1:]))
-    te_feature = [] #feature_reshape(test_data[:, 0])
-    te_feature_transformed = [] #scaler.transform(te_feature)
-    test_data_transformed = [] #np.hstack((te_feature_transformed, test_data[:, 1:]))
-    return train_data_transformed, test_data_transformed, scaler
+    return train_data_transformed
 
 
 def encode_integers(embedder, features):
