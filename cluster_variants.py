@@ -9,6 +9,8 @@ import plotly.graph_objects as go
 from sklearn.cluster import KMeans, MiniBatchKMeans, SpectralClustering, AgglomerativeClustering, DBSCAN
 from sklearn.decomposition import TruncatedSVD, FastICA, SparsePCA, NMF
 from sklearn.manifold import SpectralEmbedding
+from sklearn import metrics
+
 
 import utils
 
@@ -50,7 +52,7 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
     print("Clustering...")
     print(features.shape)
     #print(s_name_df, var_name_df, var_pos_df, var_af_df)
-    decomposition = NMF(n_components=2, max_iter=100000, init='nndsvd')
+    decomposition = NMF(n_components=2, max_iter=1000, init='nndsvd')
     #decomposition = TruncatedSVD(n_components=2, n_iter=5, random_state=42)
     #decomposition = FastICA(n_components=2)
     #decomposition = SpectralEmbedding(n_components=2)
@@ -60,6 +62,10 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
     #predict the labels of clusters
     clustering_type = MiniBatchKMeans(n_clusters=1000, random_state=32, reassignment_ratio=100.0)
     cluster_labels = clustering_type.fit_predict(low_dimensional_features)
+    
+    cluster_silhouette_score = metrics.silhouette_score(low_dimensional_features, cluster_labels, metric='euclidean')
+    print("Silhouette score: {}".format(str(np.round(cluster_silhouette_score, 2))))
+    
     #print(len(cluster_labels))
     # cluster_labels = DBSCAN(eps=0.9).fit_predict(low_dimensional_features)
     # AgglomerativeClustering(n_clusters=10).fit_predict(low_dimensional_features) 
@@ -73,6 +79,7 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
             x.append(pred_val[0])
             y.append(pred_val[-1])
             clusters.append(l)
+
     scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"])
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
     fig = px.scatter(scatter_df,
@@ -83,10 +90,12 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
         size=np.repeat(1, len(clusters))
     )
     
-    scatter_df = scatter_df.drop(["x", "y", "annotations"], axis=1)
-    scatter_df["Cluster"] = scatter_df["Cluster"].astype(int)
-    sorted_df = scatter_df.sort_values(by=["Cluster", "Index", "REF", "ALT", "POS", "AF"])
-    sorted_df.to_csv(path_plot_df)
+    clean_scatter_df = utils.remove_single_mutation(scatter_df, "POS")
+    
+    clean_scatter_df = clean_scatter_df.drop(["x", "y", "annotations"], axis=1)
+    clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
+    clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster", "Index", "REF", "ALT", "POS", "AF"])
+    clean_scatter_df.to_csv(path_plot_df)
     
     #utils.reconstruct_with_original(sorted_df, BOSTON_DATA_PATH)
     

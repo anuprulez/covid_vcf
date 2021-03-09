@@ -63,7 +63,14 @@ def reconstruct_with_original(cluster_df, original_file):
         #original_df_samples = original_df[original_df["Sample"] == sample_name and ]
         #for idy in range(len(original_df)):
             
-    
+def remove_single_mutation(dataframe, key):
+    frequency_pos = dataframe[key].value_counts().to_dict()
+    single_freq = list()
+    for key in frequency_pos:
+        if frequency_pos[key] == 1:
+            single_freq.append(key)
+    return dataframe[~dataframe['POS'].isin(single_freq)]        
+
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))
