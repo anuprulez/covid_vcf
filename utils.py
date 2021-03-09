@@ -1,6 +1,5 @@
 import json
 import numpy as np
-import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 
 
@@ -26,14 +25,18 @@ def deserialize(var_lst, sample_name):
     var_pos = list()
     var_name = list()
     var_af = list()
+    var_alt = list()
+    var_ref = list()
     for i, item in enumerate(var_lst):
         var_split = item.split(">")
         pos, ref, alt, af = var_split[0], var_split[1], var_split[2], var_split[3]
         var_txt += "{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af)
+        var_ref.append(ref)
+        var_alt.append(alt)
         var_pos.append(pos)
         var_af.append(af)
         var_name.append("{}>{}>{}>{}>{} <br>".format(sample_name, pos, ref, alt, af))
-    return var_txt, var_pos, var_name, var_af
+    return var_txt, var_pos, var_name, var_af, var_ref, var_alt
 
 
 def transform_integers(train_data):
@@ -42,30 +45,6 @@ def transform_integers(train_data):
     tr_feature_transformed = scaler.fit_transform(tr_feature)
     train_data_transformed = np.hstack((tr_feature_transformed, train_data[:, 1:]))
     return train_data_transformed
-
-
-def encode_integers(embedder, features):
-    
-    pos_reshape = feature_reshape(features[:, 0])
-    qual_reshape = feature_reshape(features[:, 1])
-    # transform POS integer to a vector
-    pos_mat = embedder(pos_reshape)
-    
-    pos_mat = tf.clip_by_value(
-        pos_mat, 0.0, 1.0, name=None
-    )
-
-    pos_mat = np.reshape(pos_mat, (pos_mat.shape[0], pos_mat.shape[2]))
-    # transform QUAL integer to a vector
-    qual_mat = embedder(qual_reshape)
-
-    qual_mat = tf.clip_by_value(
-        qual_mat, 0.0, 1.0, name=None
-    )
-
-    qual_mat = np.reshape(qual_mat, (qual_mat.shape[0], qual_mat.shape[2]))
-    np.hstack((pos_mat, qual_mat, features[:, 2:]))
-    return features
 
 
 def feature_reshape(feature):     

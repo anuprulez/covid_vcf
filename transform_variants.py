@@ -2,8 +2,6 @@ import json
 import numpy as np
 import re
 from sklearn.preprocessing import LabelEncoder
-import tensorflow as tf
-import embed_integers
 
 import utils
 
@@ -39,7 +37,6 @@ class TransformVariants:
         print("Num transformed rows for {} samples: {}".format(str(s_idx + 1), str(len(encoded_samples))))
 
         utils.save_as_json("data/{}_n_variants.json".format(typ), sample_n_variants)
-        print(len(samples_save))
         utils.save_as_json("data/{}_all_variants.json".format(typ), samples_save)
         return encoded_samples
 

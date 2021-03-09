@@ -12,7 +12,6 @@ import logging
 import h5py
 
 import transform_variants
-import setup_network
 import post_processing
 import utils
 import cluster_variants
@@ -68,7 +67,7 @@ def read_files(path=BOSTON_DATA_PATH):
     print("Clades excluded: {}".format(",".join(CLADES_EXCLUDE_LIST)))
     print("Total samples: {}".format(str(len(samples_dict))))
     return samples_dict
-    
+
 
 def encode_variants(samples):    
     print("Encoded variants...")
