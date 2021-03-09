@@ -17,19 +17,6 @@ import utils
 import cluster_variants
 
 
-SEED = 32000
-N_FILES = 1000
-N_EPOCHS = 100
-BATCH_SIZE = 64
-LR = 1e-4
-TR_TE_SPLIT = 0.0
-
-REF_DIM = 5
-ALT_1_DIM = 2
-POS_AF = 2
-ORIG_DIM = POS_AF + REF_DIM + ALT_1_DIM
-I_DIM = 2
-MODEL_SAVE_PATH = "data/saved_models/model"
 AF_CUTOFF = 0.8
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -50,6 +37,8 @@ def read_files(path=BOSTON_DATA_PATH):
     take_cols = ["Sample", "POS", "REF", "ALT", "AF"]
     by_sample_dataframe = pd.read_csv(path, sep="\t")
     by_sample_dataframe_take_cols = by_sample_dataframe[take_cols]
+    samples_name_idx = dict()
+    sample_counter = 1
     samples_dict = dict()
     selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
     for idx in range(len(by_sample_dataframe_take_cols)):
@@ -58,30 +47,34 @@ def read_files(path=BOSTON_DATA_PATH):
         AF = float(sample_row["AF"].values[0])
         # exclude signature mutations from known clades such as 19A, 19B .. in search of novel mutations.
         if check_var not in selected_mutations and AF < AF_CUTOFF:
-            variant = "{}>{}>{}>{}".format(sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], AF)
-            sample_name = sample_row["Sample"].values[0] 
+            variant = "{}>{}>{}>{}>{}".format(sample_row["Sample"].values[0], sample_row["POS"].values[0], sample_row["REF"].values[0], sample_row["ALT"].values[0], AF)
+            sample_name = sample_row["Sample"].values[0]
+            if sample_name not in samples_name_idx:
+                samples_name_idx[sample_name] = sample_counter
+                sample_counter += 1
             if sample_name not in samples_dict:
                 samples_dict[sample_name] = list()
             samples_dict[sample_name].append(variant)
     utils.save_as_json("data/samples_dict.json", samples_dict)
+    utils.save_as_json("data/samples_name_idx.json", samples_name_idx)
     print("Clades excluded: {}".format(",".join(CLADES_EXCLUDE_LIST)))
     print("Total samples: {}".format(str(len(samples_dict))))
-    return samples_dict
+    return samples_dict, samples_name_idx
 
 
-def encode_variants(samples):    
+def encode_variants(samples, samples_name_idx):    
     print("Encoded variants...")
     variants = transform_variants.TransformVariants()
-    transformed_samples = variants.get_variants(samples, "train")
+    transformed_samples = variants.get_variants(samples, samples_name_idx, "train")
     features = np.asarray(transformed_samples)
     features = features.astype('float32')
-    features = utils.transform_integers(features)
-    cluster_variants.transform_variants(features)
-    
+    #features = utils.transform_integers(features)
+    cluster_variants.transform_variants(features, samples_name_idx, BOSTON_DATA_PATH)
+
   
 if __name__ == "__main__":
     start_time = time.time()
-    samples = read_files()
-    encode_variants(samples)
+    samples, samples_name_idx = read_files()
+    encode_variants(samples, samples_name_idx)
     end_time = time.time()
     print("Program finished in {} seconds".format(str(np.round(end_time - start_time, 2))))
