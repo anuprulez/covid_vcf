@@ -54,11 +54,11 @@ class TransformVariants:
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
         float_encoded = integer_encoded.astype(float)
-        float_encoded[float_encoded == 0] = 0.25 # A
-        float_encoded[float_encoded == 1] = 0.50 # C
-        float_encoded[float_encoded == 2] = 0.75 # G
-        float_encoded[float_encoded == 3] = 1.00 # T
-        float_encoded[float_encoded == 4] = 0.00 # anything else
+        float_encoded[float_encoded == 0] = 1000 #0.25 # A
+        float_encoded[float_encoded == 1] = 2000 #0.50 # C
+        float_encoded[float_encoded == 2] = 3000 #0.75 # G
+        float_encoded[float_encoded == 3] = 4000 #1.00 # T
+        float_encoded[float_encoded == 4] = 0.0 #0.00 # anything else
         return float_encoded
 
     def transform_variants(self, variants, name_idx, max_len_ref=2, max_len_alt=2):
