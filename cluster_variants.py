@@ -40,19 +40,36 @@ def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
         var_af_df.extend(var_af)
         var_ref_df.extend(var_ref)
         var_alt_df.extend(var_alt)
-        #print(np.repeat(sample_name, idx), var_pos, var_name, var_af)
-        #print(var_name_df)
-        #print("---------------")
-    #print(s_name_df, var_name_df, var_pos_df, var_af_df)
-    #print(len(s_name_df), len(var_name_df), len(var_pos_df), len(var_af_df))
     cluster(samples_data, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH)
 
+
+def find_optimal_clusters(low_dimensional_features, number_iter=10, cluster_step=10, initial_clusters=200):
+    clustering_perf = dict()
+    for i in range(0, number_iter):
+        print("Clustering iteration: {}/{}".format(str(i + 1), str(number_iter)))
+        clustering_type = MiniBatchKMeans(n_clusters=initial_clusters, random_state=32) # reassignment_ratio=200.0
+        cluster_labels = clustering_type.fit_predict(low_dimensional_features)
+        print("Number of unique clusters: {}".format(str(len(list(set(cluster_labels))))))
+        cluster_silhouette_score = metrics.silhouette_score(low_dimensional_features, cluster_labels, metric='euclidean')
+        print("Silhouette score: {}".format(str(np.round(cluster_silhouette_score, 2))))
+        clustering_perf[i] = (cluster_silhouette_score, cluster_labels, initial_clusters)
+        initial_clusters += cluster_step
+        print()
+    best_perf = 0.0
+    idx = 0
+    for key in clustering_perf:
+        if clustering_perf[key][0] > best_perf:
+            best_perf = clustering_perf[key][0]
+            idx = key
+    best_clustering = clustering_perf[idx]
+    print(best_clustering[0], best_clustering[2])
+    return best_clustering[1], best_clustering[0]
 
 def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
     print("Clustering...")
     print(features.shape)
     #print(s_name_df, var_name_df, var_pos_df, var_af_df)
-    decomposition = NMF(n_components=2, max_iter=1000, init='nndsvd')
+    decomposition = NMF(n_components=2, max_iter=10000, init='nndsvda', random_state=32)
     #decomposition = TruncatedSVD(n_components=2, n_iter=5, random_state=42)
     #decomposition = FastICA(n_components=2)
     #decomposition = SpectralEmbedding(n_components=2)
@@ -60,13 +77,9 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
     low_dimensional_features = decomposition.fit_transform(features)
     
     #predict the labels of clusters
-    clustering_type = MiniBatchKMeans(n_clusters=1000, random_state=32, reassignment_ratio=100.0)
-    cluster_labels = clustering_type.fit_predict(low_dimensional_features)
+    cluster_labels, _ = find_optimal_clusters(low_dimensional_features)
     
-    cluster_silhouette_score = metrics.silhouette_score(low_dimensional_features, cluster_labels, metric='euclidean')
-    print("Silhouette score: {}".format(str(np.round(cluster_silhouette_score, 2))))
-    
-    #print(len(cluster_labels))
+    print(len(cluster_labels))
     # cluster_labels = DBSCAN(eps=0.9).fit_predict(low_dimensional_features)
     # AgglomerativeClustering(n_clusters=10).fit_predict(low_dimensional_features) 
     # DBSCAN(eps=0.5).fit_predict(features)
@@ -74,23 +87,23 @@ def cluster(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, v
     x = list()
     y = list()
     for i, l in enumerate(cluster_labels):
-        if l >= 0:
-            pred_val = low_dimensional_features[i]
-            x.append(pred_val[0])
-            y.append(pred_val[-1])
-            clusters.append(l)
+        pred_val = low_dimensional_features[i]
+        x.append(pred_val[0])
+        y.append(pred_val[-1])
+        clusters.append(l)
 
-    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"])
+    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"], index=None)
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
-    fig = px.scatter(scatter_df,
+    
+    clean_scatter_df = utils.remove_single_mutation(scatter_df, "POS")
+    
+    fig = px.scatter(clean_scatter_df,
         x="x",
         y="y",
         color="Cluster",
         hover_data=['annotations'],
-        size=np.repeat(1, len(clusters))
+        size=np.repeat(1, len(clean_scatter_df))
     )
-    
-    clean_scatter_df = utils.remove_single_mutation(scatter_df, "POS")
     
     clean_scatter_df = clean_scatter_df.drop(["x", "y", "annotations"], axis=1)
     clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
