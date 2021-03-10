@@ -13,14 +13,16 @@ def read_json(path):
     with open(path, 'r') as fp:
         f_content = json.loads(fp.readline())
         return f_content
-        
+
+
 def include_mutations(mutations, include_list):
     f_mutations = list()
     for clade in mutations:
         if clade in include_list:
             f_mutations.extend(mutations[clade])
     return f_mutations
-    
+
+
 def deserialize(var_lst, sample_name, samples_name_idx):
     var_txt = ""
     var_sidx = list()
@@ -54,6 +56,7 @@ def transform_integers(train_data):
     print(train_data_transformed)
     return train_data_transformed
 
+
 def reconstruct_with_original(cluster_df, original_file):
     original_df = pd.read_csv(original_file, sep="\t")
     for idx in range(len(cluster_df)):
@@ -62,19 +65,29 @@ def reconstruct_with_original(cluster_df, original_file):
         sample_pos = sample_row["POS"].values[0]
         #original_df_samples = original_df[original_df["Sample"] == sample_name and ]
         #for idy in range(len(original_df)):
-            
+
+
 def remove_single_mutation(dataframe, key):
+    key = ["REF", "POS", "ALT"]
     frequency_pos = dataframe[key].value_counts().to_dict()
+    #print(frequency_pos)
     single_freq = list()
+    #dataframe = dataframe[~dataframe[key].value_counts() == 1] 
+    #return dataframe
     for key in frequency_pos:
-        if frequency_pos[key] == 1:
-            single_freq.append(key)
-    return dataframe[~dataframe['POS'].isin(single_freq)]        
+        value = int(frequency_pos[key])
+        if value == 1:
+            dataframe = dataframe[~((dataframe['REF'] == key[0]) & (dataframe['POS'] == key[1]) & (dataframe['ALT'] == key[2]))]
+    return dataframe
+    '''print(key)
+    if frequency_pos[key] == 1:
+    single_freq.append(key)
+    return dataframe[~dataframe[key].isin(single_freq)]'''
 
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))
-    
+
 
 def read_txt(file_path):
     with open(file_path, "r") as fr:
@@ -84,7 +97,8 @@ def read_txt(file_path):
         if ln not in ['']:
             loss.append(float(ln))
     return loss
-    
+
+
 def get_var(item, POS_AF=2, REF_DIM=10):
     ref = item[POS_AF: POS_AF + REF_DIM]
     alt = item[POS_AF + REF_DIM:]
