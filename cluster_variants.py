@@ -11,6 +11,7 @@ from sklearn.decomposition import TruncatedSVD, FastICA, SparsePCA, NMF
 from sklearn.manifold import SpectralEmbedding
 from sklearn import metrics
 from sklearn.metrics import pairwise_distances
+from sklearn.metrics.pairwise import euclidean_distances
 
 
 import utils
@@ -78,6 +79,17 @@ def find_optimal_clusters(features, number_iter=15, cluster_step=20, initial_clu
     best_clustering = clustering_perf[idx]
     print(best_clustering[0], best_clustering[2])
     return best_clustering[1], best_clustering[0]
+    
+    
+def check(indices_dict, ind):
+    present = False
+    dict_key = None
+    for key in indices_dict:
+        if ind in indices_dict[key]:
+            present = True
+            dict_key = key
+            break
+    return dict_key, present
 
 
 def cluster_samples(mutations_df, mutations_labels):
@@ -97,37 +109,58 @@ def cluster_samples(mutations_df, mutations_labels):
     mat_samples = np.zeros((len(clusters_samples), max_n_samples))
     for i, item in enumerate(clusters_samples):
         l_samples = list(item.values())[0]
-        mat_samples[i, :len(l_samples)] = l_samples
+        mat_samples[i, :len(l_samples)] = np.sort(l_samples)
     #print(mat_samples)
     samples_distance_matrix = pairwise_distances(mat_samples, metric='euclidean')
     #print()
     #print(samples_distance_matrix)
     #utils.plot_mat(samples_distance_matrix)
-    threshold = 1
-    merge_clusters_indices = list()
+    threshold = 0
+    merge_clusters_indices = dict()
     merge_clusters = list()
     cluster_ctr = 0
     mutations_df["Cluster"] = mutations_df["Cluster"].astype(int)
+    
+    upper_tri = np.triu(samples_distance_matrix)
+
     for i, rowi in enumerate(samples_distance_matrix):
         for j, rowj in enumerate(samples_distance_matrix):
             if i != j:
                 similarity_score = samples_distance_matrix[i][j]
-                if similarity_score < threshold:
-                    if (j, i) not in merge_clusters_indices:
-                        print(i, j)
-                        clusterA = mutations_df[mutations_df["Cluster"] == i].to_csv()
-                        clusterB = mutations_df[mutations_df["Cluster"] == j].to_csv()
-                        
-                        clusterA = utils.clean_cluster(clusterA, cluster_ctr)
-                        clusterB = utils.clean_cluster(clusterB, cluster_ctr)
-                        merge_clusters.extend(clusterA)
-                        merge_clusters.extend(clusterB)
+                if similarity_score == threshold:
+                    keyi, prei = check(merge_clusters_indices, i)
+                    keyj, prej = check(merge_clusters_indices, j)
+                    
+                    if not prei and not prej:
+                        merge_clusters_indices[cluster_ctr] = list()
+                        merge_clusters_indices[cluster_ctr].append(i)
+                        merge_clusters_indices[cluster_ctr].append(j)
                         cluster_ctr += 1
-                        print(clusterA)
-                        print(clusterB)
-                        merge_clusters_indices.append((i, j))
-                        print("------------")
+                    if prei and not prej:
+                        merge_clusters_indices[keyi].append(j)
+                    if prej and not prei:
+                        merge_clusters_indices[keyj].append(i)
+                        #clusterA = mutations_df[mutations_df["Cluster"] == i].to_csv()
+                        #clusterB = mutations_df[mutations_df["Cluster"] == j].to_csv()
+                        
+                        #clusterA = utils.clean_cluster(clusterA, cluster_ctr)
+                        #clusterB = utils.clean_cluster(clusterB, cluster_ctr)
+                        #merge_clusters.extend(clusterA)
+                        #merge_clusters.extend(clusterB)
+                        #cluster_ctr += 1
+                        #print(clusterA)
+                        #print(clusterB)
+                        #merge_clusters_indices.append((i, j))
+                        #print("------------")
     print(merge_clusters_indices)
+    merge_c_ctr = 0
+    for key in merge_clusters_indices:
+        c_idx = merge_clusters_indices[key]
+        for i in c_idx:
+            cluster = mutations_df[mutations_df["Cluster"] == int(i)].to_csv()
+            cluster = utils.clean_cluster(cluster, merge_c_ctr)
+            merge_clusters.extend(cluster)
+        merge_c_ctr += 1
     print(merge_clusters)
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "Sample index", "REF", "POS", "ALT", "AF", "Mutation cluster index", "New cluster"])
     print(new_clusters_df)
@@ -169,7 +202,7 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     
     #predict the labels of clusters
     print("Clustering mutations...")
-    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=300)
+    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=490)
     
     #cluster_labels = utils.set_serial_cluster_numbers(cluster_labels)
     
