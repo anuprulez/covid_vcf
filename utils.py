@@ -99,6 +99,22 @@ def plot_mat(samples_distance_matrix):
     plt.matshow(samples_distance_matrix)
     plt.colorbar()
     plt.show()
+    
+def clean_cluster(cluster, new_cluster_num):
+    
+    cluster = cluster.split("\n")[1:]
+    cluster = cluster[0:len(cluster)-1]
+    cleaned_cluster = list()
+    for item in cluster:
+        item = item.split(",")
+        l = len(item)
+        clean_row = item[1:]
+        clean_row.append(str(new_cluster_num))
+        #clean_row = ",".join(clean_row)
+        print(clean_row)
+        cleaned_cluster.append(clean_row)
+    return cleaned_cluster
+                        
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))

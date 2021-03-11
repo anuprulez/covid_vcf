@@ -115,19 +115,24 @@ def cluster_samples(mutations_df, mutations_labels):
                 if similarity_score < threshold:
                     if (j, i) not in merge_clusters_indices:
                         print(i, j)
+                        clusterA = mutations_df[mutations_df["Cluster"] == i].to_csv()
+                        clusterB = mutations_df[mutations_df["Cluster"] == j].to_csv()
                         
-                        clusterA = mutations_df[mutations_df["Cluster"] == i]
-                        clusterB = mutations_df[mutations_df["Cluster"] == j]
-                        print(dir(clusterA))
-                        merge_clusters.append(clusterA)
-                        merge_clusters.append(clusterB)
-                        #np.repeat(cluster_ctr, len(merge_clusters))
-                        
+                        clusterA = utils.clean_cluster(clusterA, cluster_ctr)
+                        clusterB = utils.clean_cluster(clusterB, cluster_ctr)
+                        merge_clusters.extend(clusterA)
+                        merge_clusters.extend(clusterB)
+                        cluster_ctr += 1
                         print(clusterA)
                         print(clusterB)
                         merge_clusters_indices.append((i, j))
                         print("------------")
     print(merge_clusters_indices)
+    print(merge_clusters)
+    new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "Sample index", "REF", "POS", "ALT", "AF", "Mutation cluster index", "New cluster"])
+    print(new_clusters_df)
+    new_clusters_df.to_csv("data/cluster_samples.csv")
+    
     '''print("Clustering samples...")
     cluster_labels, _ = find_optimal_clusters(mat_samples, number_iter=10, cluster_step=1, initial_clusters=2)
     
