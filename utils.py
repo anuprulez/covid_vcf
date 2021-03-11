@@ -68,7 +68,6 @@ def reconstruct_with_original(cluster_df, original_file):
 
 
 def remove_single_mutation(dataframe, key):
-    key = ["REF", "POS", "ALT"]
     frequency_pos = dataframe[key].value_counts().to_dict()
     #print(frequency_pos)
     single_freq = list()
@@ -84,6 +83,17 @@ def remove_single_mutation(dataframe, key):
     single_freq.append(key)
     return dataframe[~dataframe[key].isin(single_freq)]'''
 
+def set_serial_cluster_numbers(cluster_labels):
+    cluster_labels = cluster_labels.tolist()
+    u_clusters = np.sort(list(set(cluster_labels)))
+    ordered_labels = list()
+    replacement_indices = dict()
+    for i, c_label in enumerate(u_clusters):
+        replacement_indices[c_label] = i
+    for c_label in cluster_labels:
+        ordered_labels.append(replacement_indices[c_label])
+    return ordered_labels
+    
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))

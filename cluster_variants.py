@@ -43,10 +43,10 @@ def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
     cluster_mutations(samples_data, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH)
 
 
-def find_optimal_clusters(features, number_iter=1, cluster_step=20, initial_clusters=220):
+def find_optimal_clusters(features, number_iter=15, cluster_step=20, initial_clusters=100):
     clustering_perf = dict()
     for i in range(0, number_iter):
-        print("Clustering iteration: {}/{}".format(str(i + 1), str(number_iter)))
+        print("Iteration: {}/{}".format(str(i + 1), str(number_iter)))
         
         clustering_type = KMeans(n_clusters=initial_clusters, tol=0.0, algorithm='full', random_state=32) # max_iter=500, n_init=250
         
@@ -60,7 +60,7 @@ def find_optimal_clusters(features, number_iter=1, cluster_step=20, initial_clus
 
         #print(clustering_type.cluster_centers_)
         
-        print("Sum of squared distances of samples to their closest cluster center: {}".format(str(np.round(clustering_type.inertia_, 4))))
+        #print("Sum of squared distances of samples to their closest cluster center: {}".format(str(np.round(clustering_type.inertia_, 4))))
         
         print("Number of unique clusters: {}".format(str(len(list(set(cluster_labels))))))
         cluster_silhouette_score = metrics.silhouette_score(features, cluster_labels, metric='euclidean')
@@ -97,9 +97,9 @@ def cluster_samples(mutations_df, mutations_labels):
     for i, item in enumerate(clusters_samples):
         l_samples = list(item.values())[0]
         mat_samples[i, :len(l_samples)] = l_samples
-
-    clustering_type = KMeans(n_clusters=10, tol=0.0, algorithm='full', random_state=32)
-    cluster_labels = clustering_type.fit_predict(mat_samples)
+        
+    print("Clustering samples...")
+    cluster_labels, _ = find_optimal_clusters(mat_samples, number_iter=10, cluster_step=1, initial_clusters=2)
     
     mat_samples_df = pd.DataFrame(mat_samples)
     mat_samples_df['Cluster'] = cluster_labels
@@ -114,7 +114,6 @@ def cluster_samples(mutations_df, mutations_labels):
     
     sorted_mat_samples_df = mat_samples_df.sort_values(by=["Cluster"])
     sorted_mat_samples_df.to_csv("data/cluster_samples.csv")
-    
 
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
@@ -134,7 +133,10 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     #sys.exit()
     
     #predict the labels of clusters
+    print("Clustering mutations...")
     cluster_labels, _ = find_optimal_clusters(features)
+    
+    #cluster_labels = utils.set_serial_cluster_numbers(cluster_labels)
     
     print(len(cluster_labels))
     # cluster_labels = DBSCAN(eps=0.9).fit_predict(low_dimensional_features)
@@ -151,9 +153,11 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
 
     #scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"], index=None)
     scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "annotations"], index=None)
+    
+    
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
     
-    clean_scatter_df = utils.remove_single_mutation(scatter_df, "POS")
+    clean_scatter_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])
     
     '''fig = px.scatter(clean_scatter_df,
         x="x",
@@ -166,10 +170,15 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     #clean_scatter_df = clean_scatter_df.drop(["x", "y", "annotations"], axis=1)
     clean_scatter_df = clean_scatter_df.drop(["annotations"], axis=1)
     clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
-    clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster", "Index", "REF", "ALT", "POS", "AF"])
+    clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster", "AF"], ascending=[True, False])
+    
+    ordered_c_labels = utils.set_serial_cluster_numbers(clean_scatter_df["Cluster"])
+    
+    clean_scatter_df["Cluster"] = ordered_c_labels
+    
     clean_scatter_df.to_csv(path_plot_df)
     
-    cluster_samples(clean_scatter_df, cluster_labels)
+    #cluster_samples(clean_scatter_df, cluster_labels)
     
     #utils.reconstruct_with_original(sorted_df, BOSTON_DATA_PATH)
     
