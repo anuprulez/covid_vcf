@@ -110,8 +110,6 @@ def clean_cluster(cluster, new_cluster_num):
         l = len(item)
         clean_row = item[1:]
         clean_row.append(str(new_cluster_num))
-        #clean_row = ",".join(clean_row)
-        print(clean_row)
         cleaned_cluster.append(clean_row)
     return cleaned_cluster
                         

@@ -17,7 +17,7 @@ import utils
 import cluster_variants
 
 
-AF_CUTOFF = 1.0
+AF_CUTOFF = 0.8
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
