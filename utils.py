@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 
@@ -94,6 +95,10 @@ def set_serial_cluster_numbers(cluster_labels):
         ordered_labels.append(replacement_indices[c_label])
     return ordered_labels
     
+def plot_mat(samples_distance_matrix):
+    plt.matshow(samples_distance_matrix)
+    plt.colorbar()
+    plt.show()
 
 def feature_reshape(feature):     
     return np.reshape(feature, (feature.shape[0], 1))

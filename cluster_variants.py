@@ -10,6 +10,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans, SpectralClustering, Feature
 from sklearn.decomposition import TruncatedSVD, FastICA, SparsePCA, NMF
 from sklearn.manifold import SpectralEmbedding
 from sklearn import metrics
+from sklearn.metrics import pairwise_distances
 
 
 import utils
@@ -97,8 +98,37 @@ def cluster_samples(mutations_df, mutations_labels):
     for i, item in enumerate(clusters_samples):
         l_samples = list(item.values())[0]
         mat_samples[i, :len(l_samples)] = l_samples
-        
-    print("Clustering samples...")
+    #print(mat_samples)
+    samples_distance_matrix = pairwise_distances(mat_samples, metric='euclidean')
+    #print()
+    #print(samples_distance_matrix)
+    #utils.plot_mat(samples_distance_matrix)
+    threshold = 1
+    merge_clusters_indices = list()
+    merge_clusters = list()
+    cluster_ctr = 0
+    mutations_df["Cluster"] = mutations_df["Cluster"].astype(int)
+    for i, rowi in enumerate(samples_distance_matrix):
+        for j, rowj in enumerate(samples_distance_matrix):
+            if i != j:
+                similarity_score = samples_distance_matrix[i][j]
+                if similarity_score < threshold:
+                    if (j, i) not in merge_clusters_indices:
+                        print(i, j)
+                        
+                        clusterA = mutations_df[mutations_df["Cluster"] == i]
+                        clusterB = mutations_df[mutations_df["Cluster"] == j]
+                        print(dir(clusterA))
+                        merge_clusters.append(clusterA)
+                        merge_clusters.append(clusterB)
+                        #np.repeat(cluster_ctr, len(merge_clusters))
+                        
+                        print(clusterA)
+                        print(clusterB)
+                        merge_clusters_indices.append((i, j))
+                        print("------------")
+    print(merge_clusters_indices)
+    '''print("Clustering samples...")
     cluster_labels, _ = find_optimal_clusters(mat_samples, number_iter=10, cluster_step=1, initial_clusters=2)
     
     mat_samples_df = pd.DataFrame(mat_samples)
@@ -113,7 +143,7 @@ def cluster_samples(mutations_df, mutations_labels):
             print()
     
     sorted_mat_samples_df = mat_samples_df.sort_values(by=["Cluster"])
-    sorted_mat_samples_df.to_csv("data/cluster_samples.csv")
+    sorted_mat_samples_df.to_csv("data/cluster_samples.csv")'''
 
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
@@ -134,7 +164,7 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     
     #predict the labels of clusters
     print("Clustering mutations...")
-    cluster_labels, _ = find_optimal_clusters(features)
+    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=300)
     
     #cluster_labels = utils.set_serial_cluster_numbers(cluster_labels)
     
@@ -178,7 +208,7 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     
     clean_scatter_df.to_csv(path_plot_df)
     
-    #cluster_samples(clean_scatter_df, cluster_labels)
+    cluster_samples(clean_scatter_df, ordered_c_labels)
     
     #utils.reconstruct_with_original(sorted_df, BOSTON_DATA_PATH)
     
