@@ -17,14 +17,14 @@ import utils
 import cluster_variants
 
 
-AF_CUTOFF = 0.8
+AF_CUTOFF = 1.0
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv"
 COG_20201120 = "data/cog_uk_vcf/cog_20201120_by_sample.tsv"
 #FULL_LIST = ['19A', '20H/501Y.V2', '20A', '20E (EU1)', '20D', '20I/501Y.V1', '20B', '20F', '19B', '20J/501Y.V3', '20G', '20C']
-CLADES_EXCLUDE_LIST = [] #['19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3']
+CLADES_EXCLUDE_LIST = ['19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3']
 #CLADES_EXCLUDE_LIST = ['19A'] # '19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3'
 CLADES_MUTATIONS = "data/clades/parsed_nuc_clades.json"
 

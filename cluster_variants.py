@@ -156,28 +156,14 @@ def cluster_samples(mutations_df, mutations_labels):
 
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
-    print("Clustering...")
-    print(features.shape)
-    #decomposition = NMF(n_components=2, max_iter=1000, init='nndsvda', alpha=0.0001, l1_ratio=0.5, random_state=32) #tol=0.00000001,
-    #low_dimensional_features = features #decomposition.fit_transform(features)
-    #print(decomposition.reconstruction_err_, decomposition.n_iter_)
-    
-    #predict the labels of clusters
     print("Clustering mutations...")
-    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=490)
+    print(features.shape)
     
-    #clusters = list()
-    #x = list()
-    #y = list()
-    #for i, l in enumerate(cluster_labels):
-        #pred_val = low_dimensional_features[i]
-        #x.append(pred_val[0])
-        #y.append(pred_val[-1])
-        #clusters.append(l)
+    cluster_labels, _ = find_optimal_clusters(features, number_iter=40, cluster_step=10, initial_clusters=50)
 
     #scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"], index=None)
-    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "annotations"], index=None)
     
+    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "annotations"], index=None)
     
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
     
