@@ -132,7 +132,7 @@ def cluster_samples(mutations_df, mutations_labels):
         for j, rowj in enumerate(samples_distance_matrix):
             if i != j:
                 similarity_score = int(samples_distance_matrix[i][j])
-                key = str(similarity_score) #"{}_{}".format(str(similarity_score), str(cluster_ctr))
+                key = str(similarity_score)
                 
                 if key not in merge_clusters_indices:
                     merge_clusters_indices[key] = list()
@@ -172,8 +172,8 @@ def cluster_samples(mutations_df, mutations_labels):
     for key in merge_clusters_indices:
         merge_clusters_indices[key] = list(set(merge_clusters_indices[key]))
     merge_clusters_indices = {k: v for k, v in sorted(merge_clusters_indices.items(), key=lambda item: item[0])}
-    print(merge_clusters_indices)
-    '''print("Merging clusters...")
+    #print(merge_clusters_indices)
+    print("Merging clusters...")
     dist_threshold = 1
     merge_c_ctr = 0
     dist_list = list()
@@ -188,15 +188,17 @@ def cluster_samples(mutations_df, mutations_labels):
                 cluster = mutations_df[mutations_df["Cluster"] == int(i)].to_csv()
                 cluster = utils.clean_cluster(cluster, key)
                 merge_clusters.extend(cluster)
-        #merge_c_ctr += 1
-    print(merge_clusters)
+    #print(merge_clusters)
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
+    ordered_c_labels = utils.set_serial_cluster_numbers(new_clusters_df["Cluster"])
+    new_clusters_df["Cluster"] = ordered_c_labels 
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["Cluster", "Sample", "REF", "POS", "ALT"], ascending=[True, True, True, True, True])
     new_clusters_df.to_csv("data/cluster_samples.csv")
     final_df = new_clusters_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
-    final_df.to_csv("data/final_cluster_samples.csv")'''
+    final_df = final_df.sort_values(by=["Cluster", "Sample", "REF", "POS", "ALT"], ascending=[True, True, True, True, True])
+    final_df.to_csv("data/final_cluster_samples.csv")
 
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
