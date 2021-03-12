@@ -92,6 +92,13 @@ def check(indices_dict, ind):
     return dict_key, present
 
 
+def check_presence(indices_dict, key, index):
+    if index in indices_dict[key]:
+        return True
+    else:
+        return False
+
+
 def cluster_samples(mutations_df, mutations_labels):
     u_mutation_labels = list(set(mutations_labels))
     clusters_samples = list()
@@ -110,56 +117,93 @@ def cluster_samples(mutations_df, mutations_labels):
     for i, item in enumerate(clusters_samples):
         l_samples = list(item.values())[0]
         mat_samples[i, :len(l_samples)] = np.sort(l_samples)
+ 
     samples_distance_matrix = pairwise_distances(mat_samples, metric='euclidean')
     threshold = 0
     merge_clusters_indices = dict()
     merge_clusters = list()
     cluster_ctr = 0
     mutations_df["Cluster"] = mutations_df["Cluster"].astype(int)
-    
-    upper_tri = np.triu(samples_distance_matrix)
+    sample_dist = dict()
+    max_dist = np.max(samples_distance_matrix)
+    print(max_dist)
 
     for i, rowi in enumerate(samples_distance_matrix):
         for j, rowj in enumerate(samples_distance_matrix):
             if i != j:
-                similarity_score = samples_distance_matrix[i][j]
-                if similarity_score == threshold:
+                similarity_score = int(samples_distance_matrix[i][j])
+                key = str(similarity_score) #"{}_{}".format(str(similarity_score), str(cluster_ctr))
+                
+                if key not in merge_clusters_indices:
+                    merge_clusters_indices[key] = list()
+                    merge_clusters_indices[key].extend([i, j])
+                    cluster_ctr += 1
+                else:
+                    if i in merge_clusters_indices[key] and j not in merge_clusters_indices[key]:
+                        merge_clusters_indices[key].extend([j])
+                        
+                    if j in merge_clusters_indices[key] and i not in merge_clusters_indices[key]:
+                        merge_clusters_indices[key].extend([i])
+                        
+                        
+                    if i not in merge_clusters_indices[key] and j not in merge_clusters_indices[key]:
+                        first_idx = merge_clusters_indices[key][0]
+                        disti = int(samples_distance_matrix[i][first_idx])
+                    
+                        if disti == similarity_score:
+                            merge_clusters_indices[key].extend([i, j])
+                        else:
+                            key = "{}_{}".format(str(similarity_score), str(cluster_ctr))
+                            merge_clusters_indices[key] = list()
+                            merge_clusters_indices[key].extend([i, j])
+                            cluster_ctr += 1
+                '''if similarity_score == threshold:
                     keyi, prei = check(merge_clusters_indices, i)
                     keyj, prej = check(merge_clusters_indices, j)
                     if not prei and not prej:
-                        merge_clusters_indices[cluster_ctr] = list()
-                        merge_clusters_indices[cluster_ctr].append(i)
-                        merge_clusters_indices[cluster_ctr].append(j)
+                        merge_clusters_indices[similarity_score] = list()
+                        merge_clusters_indices[similarity_score].append(i)
+                        merge_clusters_indices[similarity_score].append(j) 
                         cluster_ctr += 1
                     if prei and not prej:
                         merge_clusters_indices[keyi].append(j)
                     if prej and not prei:
-                        merge_clusters_indices[keyj].append(i)
-    print(merge_clusters_indices)
-    merge_c_ctr = 0
+                        merge_clusters_indices[keyj].append(i)'''
     for key in merge_clusters_indices:
-        c_idx = merge_clusters_indices[key]
-        for i in c_idx:
-            cluster = mutations_df[mutations_df["Cluster"] == int(i)].to_csv()
-            cluster = utils.clean_cluster(cluster, merge_c_ctr)
-            merge_clusters.extend(cluster)
-        merge_c_ctr += 1
+        merge_clusters_indices[key] = list(set(merge_clusters_indices[key]))
+    merge_clusters_indices = {k: v for k, v in sorted(merge_clusters_indices.items(), key=lambda item: item[0])}
+    print(merge_clusters_indices)
+    '''print("Merging clusters...")
+    dist_threshold = 1
+    merge_c_ctr = 0
+    dist_list = list()
+    for key in merge_clusters_indices:
+        if "_" in key:
+            eff_key = int(key.split("_")[0])
+        else:
+            eff_key = int(key)
+        if eff_key < dist_threshold:
+            c_idx = merge_clusters_indices[key]
+            for i in c_idx:
+                cluster = mutations_df[mutations_df["Cluster"] == int(i)].to_csv()
+                cluster = utils.clean_cluster(cluster, key)
+                merge_clusters.extend(cluster)
+        #merge_c_ctr += 1
+    print(merge_clusters)
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
-    
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
-    
     new_clusters_df = new_clusters_df.sort_values(by=["Cluster", "Sample", "REF", "POS", "ALT"], ascending=[True, True, True, True, True])
     new_clusters_df.to_csv("data/cluster_samples.csv")
     final_df = new_clusters_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
-    final_df.to_csv("data/final_cluster_samples.csv")
+    final_df.to_csv("data/final_cluster_samples.csv")'''
 
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
     print("Clustering mutations...")
     print(features.shape)
     
-    cluster_labels, _ = find_optimal_clusters(features, number_iter=40, cluster_step=10, initial_clusters=50)
+    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=320)
 
     #scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"], index=None)
     
