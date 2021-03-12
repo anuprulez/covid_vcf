@@ -31,7 +31,7 @@ def find_clades_in_clusters():
         POS = sample_row["site"].values[0]
         ALT = sample_row["alt"].values[0]
         row = clusters_df[(clusters_df["POS"] == int(POS)) & (clusters_df["ALT"] == ALT)]
-        #print(clade_name, POS, ALT, len(row))
+        print(clade_name, POS, ALT, len(row))
         if len(row) > 0:
             if clade_name not in clades_present:
                 clades_present.append([clade_name, str(POS), ALT])
