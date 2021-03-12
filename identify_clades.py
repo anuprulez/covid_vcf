@@ -24,6 +24,7 @@ def find_clades_in_clusters():
     clusters_df = get_data(Clusters_path, ",")
     print(clusters_df)
     clades_present = list()
+    clades_missing = list()
     for i in range(len(clades_df)):
         sample_row = clades_df.take([i])
         clade_name = sample_row["clade"].values[0]
@@ -34,11 +35,19 @@ def find_clades_in_clusters():
         if len(row) > 0:
             if clade_name not in clades_present:
                 clades_present.append([clade_name, str(POS), ALT])
+        else:
+            if clade_name not in clades_missing:
+                clades_missing.append([clade_name, str(POS), ALT])
         #print(row)
         #print("-------------------")
     print(clades_present)
+    print(clades_missing)
     clades_present_df = pd.DataFrame(clades_present, columns=["Clade name", "POS", "ALT"])
     clades_present_df.to_csv("data/clades_present_df.csv", sep=",")
+    
+    clades_missing_df = pd.DataFrame(clades_missing, columns=["Clade name", "POS", "ALT"])
+    clades_missing_df.to_csv("data/clades_missing_df.csv", sep=",")
+    
         
     
     
