@@ -23,6 +23,16 @@ def include_mutations(mutations, include_list):
             f_mutations.extend(mutations[clade])
     return f_mutations
 
+def get_clades_pos_alt():
+    clades_mutations = list()
+    clades_path = "https://raw.githubusercontent.com/nextstrain/ncov/557efcbe06641af72c28d3f7f0fa511b6f16e89c/defaults/clades.tsv"
+    clades_df = pd.read_csv(clades_path, sep="\t")
+    for i in range(len(clades_df)):
+        sample_row = clades_df.take([i])
+        POS = sample_row["site"].values[0]
+        ALT = sample_row["alt"].values[0]
+        clades_mutations.append("{}>{}".format(str(POS), str(ALT)))
+    return list(set(clades_mutations))
 
 def deserialize(var_lst, sample_name, samples_name_idx):
     var_txt = ""

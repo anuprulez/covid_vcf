@@ -79,6 +79,7 @@ class TransformVariants:
                 #pos = pos ** 2
                 #print(pos)
                 sample = np.hstack(([pos], n_e_ref.tolist(), n_e_alt.tolist()))
+                #sample = np.hstack([pos])
                 sample = [float(x) for x in sample]
                 encoded_sample.append(sample)
                 v_list.append(item)
