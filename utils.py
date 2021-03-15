@@ -64,25 +64,16 @@ def reconstruct_with_original(cluster_df, original_file):
         sample_row = cluster_df.take([idx])
         sample_name = sample_row["Sample"].values[0]
         sample_pos = sample_row["POS"].values[0]
-        #original_df_samples = original_df[original_df["Sample"] == sample_name and ]
-        #for idy in range(len(original_df)):
 
 
 def remove_single_mutation(dataframe, key):
     frequency_pos = dataframe[key].value_counts().to_dict()
-    #print(frequency_pos)
     single_freq = list()
-    #dataframe = dataframe[~dataframe[key].value_counts() == 1] 
-    #return dataframe
     for key in frequency_pos:
         value = int(frequency_pos[key])
         if value == 1:
             dataframe = dataframe[~((dataframe['REF'] == key[0]) & (dataframe['POS'] == key[1]) & (dataframe['ALT'] == key[2]))]
     return dataframe
-    '''print(key)
-    if frequency_pos[key] == 1:
-    single_freq.append(key)
-    return dataframe[~dataframe[key].isin(single_freq)]'''
 
 def set_serial_cluster_numbers(cluster_labels):
     cluster_labels = cluster_labels.tolist()
@@ -101,7 +92,6 @@ def plot_mat(samples_distance_matrix):
     plt.show()
     
 def clean_cluster(cluster, new_cluster_num):
-    
     cluster = cluster.split("\n")[1:]
     cluster = cluster[0:len(cluster)-1]
     cleaned_cluster = list()

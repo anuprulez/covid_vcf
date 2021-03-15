@@ -54,10 +54,10 @@ class TransformVariants:
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
         float_encoded = integer_encoded.astype(float)
-        float_encoded[float_encoded == 0] = 1000 #0.25 # A
-        float_encoded[float_encoded == 1] = 2000 #0.50 # C
-        float_encoded[float_encoded == 2] = 3000 #0.75 # G
-        float_encoded[float_encoded == 3] = 4000 #1.00 # T
+        float_encoded[float_encoded == 0] = 100 ** 2 #0.25 # A
+        float_encoded[float_encoded == 1] = 200 ** 2 #0.50 # C
+        float_encoded[float_encoded == 2] = 300 ** 2 #0.75 # G
+        float_encoded[float_encoded == 3] = 400 ** 2 #1.00 # T
         float_encoded[float_encoded == 4] = 0.0 #0.00 # anything else
         return float_encoded
 
@@ -66,7 +66,7 @@ class TransformVariants:
         v_list = list()
         for index, item in enumerate(variants):
             ref_var = item.split(">")
-            s_name, pos, ref, alt_1, allel_freq = ref_var[0], ref_var[1], ref_var[2], ref_var[3], ref_var[4]
+            s_name, pos, ref, alt_1, allel_freq = ref_var[0], int(ref_var[1]), ref_var[2], ref_var[3], ref_var[4]
             if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
                 sample = list()
                 encoded_ref = self.encode_nucleotides(ref, max_len_ref)
@@ -75,8 +75,12 @@ class TransformVariants:
                 n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
                 #sample = np.hstack(([name_idx, pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
                 #sample = np.hstack(([pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
+                #print(pos)
+                pos = pos ** 2
+                #print(pos)
                 sample = np.hstack(([pos], n_e_ref.tolist(), n_e_alt.tolist()))
                 sample = [float(x) for x in sample]
                 encoded_sample.append(sample)
                 v_list.append(item)
+        #print(encoded_sample)
         return np.asarray(encoded_sample), v_list

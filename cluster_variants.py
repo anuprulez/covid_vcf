@@ -6,7 +6,7 @@ import plotly
 import plotly.express as px
 import plotly.graph_objects as go
 
-from sklearn.cluster import KMeans, MiniBatchKMeans, SpectralClustering, FeatureAgglomeration, AgglomerativeClustering, DBSCAN, MeanShift
+from sklearn.cluster import KMeans, MiniBatchKMeans, SpectralClustering, FeatureAgglomeration, AgglomerativeClustering, DBSCAN, MeanShift, OPTICS
 from sklearn.decomposition import TruncatedSVD, FastICA, SparsePCA, NMF
 from sklearn.manifold import SpectralEmbedding
 from sklearn import metrics
@@ -45,27 +45,20 @@ def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
     cluster_mutations(samples_data, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH)
 
 
-def find_optimal_clusters(features, number_iter=40, cluster_step=10, initial_clusters=50):
+def find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=200):
     clustering_perf = dict()
+    inertia = list()
     for i in range(0, number_iter):
         print("Iteration: {}/{}".format(str(i + 1), str(number_iter)))
+        # max_iter=300, batch_size=200, reassignment_ratio=0.0001
+        clustering_type = OPTICS(min_samples=2, min_cluster_size=2)
+        #KMeans(n_clusters=initial_clusters, n_init=1, init='k-means++', random_state=32)
         
-        clustering_type = KMeans(n_clusters=initial_clusters, tol=0.0, algorithm='full', random_state=32) # max_iter=500, n_init=250
-        
-        #FeatureAgglomeration(n_clusters=initial_clusters, linkage='complete')
-        
-        #KMeans(n_clusters=initial_clusters, precompute_distances=True, tol=0.0, algorithm='full', random_state=32) 
-        
-        #MiniBatchKMeans(n_clusters=initial_clusters, random_state=32)
-        
-        cluster_labels = clustering_type.fit_predict(features) #clustering_type.fit_predict(features)
-
-        #print(clustering_type.cluster_centers_)
-        
-        #print("Sum of squared distances of samples to their closest cluster center: {}".format(str(np.round(clustering_type.inertia_, 4))))
+        cluster_labels = clustering_type.fit_predict(features)
         
         print("Number of unique clusters: {}".format(str(len(list(set(cluster_labels))))))
         cluster_silhouette_score = metrics.silhouette_score(features, cluster_labels, metric='euclidean')
+        #inertia.append(clustering_type.inertia_)
         print("Silhouette score: {}".format(str(cluster_silhouette_score)))
         print()
         clustering_perf[i] = (cluster_silhouette_score, cluster_labels, initial_clusters)
@@ -78,6 +71,8 @@ def find_optimal_clusters(features, number_iter=40, cluster_step=10, initial_clu
             idx = key
     best_clustering = clustering_perf[idx]
     print(best_clustering[0], best_clustering[2])
+    #print("Inertia")
+    #print(inertia)
     return best_clustering[1], best_clustering[0]
     
     
@@ -126,7 +121,7 @@ def cluster_samples(mutations_df, mutations_labels):
     mutations_df["Cluster"] = mutations_df["Cluster"].astype(int)
     sample_dist = dict()
     max_dist = np.max(samples_distance_matrix)
-    print(max_dist)
+    #print(max_dist)
 
     for i, rowi in enumerate(samples_distance_matrix):
         for j, rowj in enumerate(samples_distance_matrix):
@@ -172,7 +167,6 @@ def cluster_samples(mutations_df, mutations_labels):
     for key in merge_clusters_indices:
         merge_clusters_indices[key] = list(set(merge_clusters_indices[key]))
     merge_clusters_indices = {k: v for k, v in sorted(merge_clusters_indices.items(), key=lambda item: item[0])}
-    #print(merge_clusters_indices)
     print("Merging clusters...")
     dist_threshold = 1
     merge_c_ctr = 0
@@ -183,15 +177,18 @@ def cluster_samples(mutations_df, mutations_labels):
         else:
             eff_key = int(key)
         if eff_key < dist_threshold:
+            #print(eff_key, key)
             c_idx = merge_clusters_indices[key]
             for i in c_idx:
                 cluster = mutations_df[mutations_df["Cluster"] == int(i)].to_csv()
+                #print(eff_key, key)
                 cluster = utils.clean_cluster(cluster, key)
+                #print(cluster)
                 merge_clusters.extend(cluster)
     #print(merge_clusters)
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
-    ordered_c_labels = utils.set_serial_cluster_numbers(new_clusters_df["Cluster"])
-    new_clusters_df["Cluster"] = ordered_c_labels 
+    #ordered_c_labels = utils.set_serial_cluster_numbers(new_clusters_df["Cluster"])
+    #new_clusters_df["Cluster"] = ordered_c_labels 
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["Cluster", "Sample", "REF", "POS", "ALT"], ascending=[True, True, True, True, True])
@@ -204,8 +201,8 @@ def cluster_samples(mutations_df, mutations_labels):
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
     print("Clustering mutations...")
     print(features.shape)
-    
-    cluster_labels, _ = find_optimal_clusters(features, number_iter=1, cluster_step=10, initial_clusters=320)
+    #print(features)
+    cluster_labels, _ = find_optimal_clusters(features)
 
     #scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, clusters, x, y, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "x", "y", "annotations"], index=None)
     
