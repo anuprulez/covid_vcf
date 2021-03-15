@@ -91,6 +91,18 @@ def plot_mat(samples_distance_matrix):
     plt.colorbar()
     plt.show()
     
+def check_uniform_clusters(clustered_df, n_u_clusters):
+    for idx in range(n_u_clusters):
+        cluster = clustered_df[clustered_df["Cluster"] == idx] 
+        REF = list(set(cluster["REF"].tolist()))
+        POS = list(set(cluster["POS"].tolist()))
+        ALT = list(set(cluster["ALT"].tolist()))
+        if len(REF) != len(POS) or len(REF) != len(ALT):
+            print("Cluster {} is not optimal".format(str(idx)))
+            print()
+            print(cluster)
+            print("------------------------")
+    
 def clean_cluster(cluster, new_cluster_num):
     cluster = cluster.split("\n")[1:]
     cluster = cluster[0:len(cluster)-1]

@@ -54,10 +54,10 @@ class TransformVariants:
     def ordinal_encoder(self, my_array):
         integer_encoded = self.label_encoder.transform(my_array)
         float_encoded = integer_encoded.astype(float)
-        float_encoded[float_encoded == 0] = 100 ** 2 #0.25 # A
-        float_encoded[float_encoded == 1] = 200 ** 2 #0.50 # C
-        float_encoded[float_encoded == 2] = 300 ** 2 #0.75 # G
-        float_encoded[float_encoded == 3] = 400 ** 2 #1.00 # T
+        float_encoded[float_encoded == 0] = 100 ** 1 #0.25 # A
+        float_encoded[float_encoded == 1] = 200 ** 1 #0.50 # C
+        float_encoded[float_encoded == 2] = 300 ** 1 #0.75 # G
+        float_encoded[float_encoded == 3] = 400 ** 1 #1.00 # T
         float_encoded[float_encoded == 4] = 0.0 #0.00 # anything else
         return float_encoded
 
@@ -76,7 +76,7 @@ class TransformVariants:
                 #sample = np.hstack(([name_idx, pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
                 #sample = np.hstack(([pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
                 #print(pos)
-                pos = pos ** 2
+                #pos = pos ** 2
                 #print(pos)
                 sample = np.hstack(([pos], n_e_ref.tolist(), n_e_alt.tolist()))
                 sample = [float(x) for x in sample]
