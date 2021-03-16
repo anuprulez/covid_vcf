@@ -15,7 +15,7 @@ class TransformVariants:
         self.label_encoder = LabelEncoder()
         self.label_encoder.fit(np.array(['a','c','g','t','z']))
 
-    def get_variants(self, samples, samples_name_idx, typ):
+    def get_variants(self, samples, samples_name_idx, max_REF, max_ALT, typ):
         print("Transforming variants...")
         sample_n_variants = list()
         encoded_samples = list()
@@ -26,9 +26,10 @@ class TransformVariants:
             variants = list()
             variants = dict()
             l_variants = samples[sample]
+            
             if len(l_variants) > 0:
                 #print(sample, samples_name_idx[sample])
-                transformed_variants, v_list = self.transform_variants(l_variants, samples_name_idx[sample])
+                transformed_variants, v_list = self.transform_variants(l_variants, samples_name_idx[sample], max_REF, max_ALT)
                 encoded_samples.extend(transformed_variants)
                 variants[sample] = len(transformed_variants)
                 sample_n_variants.append(variants)
@@ -61,27 +62,20 @@ class TransformVariants:
         float_encoded[float_encoded == 4] = 0.0 #0.00 # anything else
         return float_encoded
 
-    def transform_variants(self, variants, name_idx, max_len_ref=2, max_len_alt=2):
+    def transform_variants(self, variants, name_idx, max_REF, max_ALT):
         encoded_sample = list()
         v_list = list()
         for index, item in enumerate(variants):
             ref_var = item.split(">")
             s_name, pos, ref, alt_1, allel_freq = ref_var[0], int(ref_var[1]), ref_var[2], ref_var[3], ref_var[4]
-            if len(ref) <= max_len_ref and len(alt_1) <= max_len_alt:
+            if len(ref) <= max_REF and len(alt_1) <= max_ALT:
                 sample = list()
-                encoded_ref = self.encode_nucleotides(ref, max_len_ref)
-                encoded_alt = self.encode_nucleotides(alt_1, max_len_alt)
-                n_e_ref = np.concatenate((encoded_ref, np.zeros(max_len_ref - len(encoded_ref))), axis=None)
-                n_e_alt = np.concatenate((encoded_alt, np.zeros(max_len_alt - len(encoded_alt))), axis=None)
-                #sample = np.hstack(([name_idx, pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
-                #sample = np.hstack(([pos, allel_freq], n_e_ref.tolist(), n_e_alt.tolist()))
-                #print(pos)
-                #pos = pos ** 2
-                #print(pos)
+                encoded_ref = self.encode_nucleotides(ref, max_REF)
+                encoded_alt = self.encode_nucleotides(alt_1, max_ALT)
+                n_e_ref = np.concatenate((encoded_ref, np.zeros(max_REF - len(encoded_ref))), axis=None)
+                n_e_alt = np.concatenate((encoded_alt, np.zeros(max_ALT - len(encoded_alt))), axis=None)
                 sample = np.hstack(([pos], n_e_ref.tolist(), n_e_alt.tolist()))
-                #sample = np.hstack([pos])
                 sample = [float(x) for x in sample]
                 encoded_sample.append(sample)
                 v_list.append(item)
-        #print(encoded_sample)
         return np.asarray(encoded_sample), v_list

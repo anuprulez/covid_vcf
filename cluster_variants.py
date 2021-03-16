@@ -100,7 +100,7 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
                 cluster_sample = cluster_df[cluster_df["Index"] == s].to_csv()
                 cluster = utils.clean_cluster(cluster_sample, cluster_ctr)
                 merge_clusters.extend(cluster)
-                mut, af, name = utils.clean_cluster_by_mutation(cluster_sample)
+                _, af, name = utils.clean_cluster_by_mutation(cluster_sample)
                 l_names.append(name)
                 l_af.append(af)
             merged_row.extend([min(l_af), max(l_af), len(l_names), ",".join(l_names)])
@@ -123,32 +123,21 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["Cluster", "POS", "AF"], ascending=[True, True, False])
-    new_clusters_df.to_csv("data/cluster_samples.csv")
+    new_clusters_df.to_csv("data/clusters_of_co-occurring_samples.csv")
     
     final_df = new_clusters_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
     final_df = final_df.sort_values(by=["Cluster", "POS", "AF"], ascending=[True, True, False])
-    final_df.to_csv("data/final_cluster_samples.csv")
+    final_df.to_csv("data/final_clusters_of_co-occurring_samples.csv")
     
 
-def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH, path_plot_df="data/test_clusters.csv"):
+def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH):
     print("Shape of features: ({},{})".format(str(features.shape[0]), str(features.shape[1])))
     print("Clustering mutations...")
     cluster_labels = find_optimal_clusters(features)
     
     scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "annotations"], index=None)
-    
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
-    
-    clean_scatter_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])
-    
-    '''fig = px.scatter(clean_scatter_df,
-        x="x",
-        y="y",
-        color="Cluster",
-        hover_data=['annotations'],
-        size=np.repeat(1, len(clean_scatter_df))
-    )'''
-    
+    clean_scatter_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])    
     clean_scatter_df = clean_scatter_df.drop(["annotations"], axis=1)
     clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
     clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster", "AF"], ascending=[True, False])
@@ -156,37 +145,28 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     clean_scatter_df["Cluster"] = ordered_c_labels
     n_u_clusters = len(list(set(ordered_c_labels)))
     utils.check_uniform_clusters(clean_scatter_df, n_u_clusters)
-    clean_scatter_df.to_csv(path_plot_df)
+    clean_scatter_df.to_csv("data/clusters_of_mutations.csv")
     
     merge_clusters = list()
     for i in range(n_u_clusters):
         cluster_df = clean_scatter_df[clean_scatter_df["Cluster"] == int(i)]
-        #print(cluster_df)
         max_af = np.max(cluster_df["AF"])
         min_af = np.min(cluster_df["AF"])
         sample_names = cluster_df["Sample"].to_list()
-        #print(dir(cluster_df["Sample"]))
-        
-        #print(max_af, min_af, sample_names)
-        
         to_csv = utils.clean_cluster(cluster_df.to_csv())
-        #print(to_csv)
-        
         row = to_csv[0][2:5]
         row.extend([min_af, max_af, len(sample_names), ",".join(sample_names)])
         row.extend([to_csv[0][-1]])
-        #print(row)
         merge_clusters.extend([row])
-        #print("---------------------------")
-     
+
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["REF", "POS", "ALT", "MinAF", "MaxAF", "NumSamples", "SampleNames", "MutationCluster"])
     new_clusters_df["MinAF"] = new_clusters_df["MinAF"].astype(float)
     new_clusters_df["MaxAF"] = new_clusters_df["MaxAF"].astype(float)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df["MutationCluster"] = new_clusters_df["MutationCluster"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["MutationCluster", "POS", "MinAF", "MaxAF"], ascending=[True, True, False, False])
-    new_clusters_df.to_csv("data/test_clusters_merged.csv") 
+    new_clusters_df.to_csv("data/merged_clusters_of_mutations.csv") 
     
-    #extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
+    extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
     #plotly.offline.plot(fig, filename='data/cluster_variants.html')
     #fig.show()

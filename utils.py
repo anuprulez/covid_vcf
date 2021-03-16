@@ -81,11 +81,21 @@ def reconstruct_with_original(cluster_df, original_file):
 
 def remove_single_mutation(dataframe, key):
     frequency_pos = dataframe[key].value_counts().to_dict()
-    single_freq = list()
+    single_mut = list()
     for key in frequency_pos:
         value = int(frequency_pos[key])
         if value == 1:
+            single_instance = dataframe[((dataframe['REF'] == key[0]) & (dataframe['POS'] == key[1]) & (dataframe['ALT'] == key[2]))]
             dataframe = dataframe[~((dataframe['REF'] == key[0]) & (dataframe['POS'] == key[1]) & (dataframe['ALT'] == key[2]))]
+            single_instance = single_instance.to_csv()
+            single_instance = single_instance.split("\n")[1:]
+            single_instance = single_instance[0:len(single_instance)-1][0].split(",")
+            single_instance = single_instance[1:len(single_instance)-1]
+            single_mut.extend([single_instance])
+    single_mut_df = pd.DataFrame(single_mut, columns=["Sample", "Index", "REF", "POS", "ALT", "AF", "MutationCluster"])
+    single_mut_df = single_mut_df.drop(["Index", "MutationCluster"], axis=1)
+    single_mut_df.to_csv("data/excluded_mutations.csv")
+    print("# of singleton mutations removed: {}".format(str(len(single_mut_df))))
     return dataframe
 
 
@@ -125,8 +135,6 @@ def clean_cluster_by_mutation(cluster):
     af = float(cluster[-2])
     s_name = cluster[1]
     mut = [cluster[3], cluster[4], cluster[5], cluster[6]]
-    #print(cluster, mut, af, s_name)
-    #print()
     return mut, af, s_name
 
 def clean_cluster(cluster, new_cluster_num=None):
