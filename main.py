@@ -17,7 +17,7 @@ import utils
 import cluster_variants
 
 
-AF_CUTOFF = 1.0
+AF_CUTOFF = 0.8
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -44,7 +44,7 @@ def read_files(path=BOSTON_DATA_PATH):
     sample_counter = 1
     samples_dict = dict()
     #selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
-    selected_mutations = [] #utils.get_clades_pos_alt()
+    selected_mutations = utils.get_clades_pos_alt()
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])

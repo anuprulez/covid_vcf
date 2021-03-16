@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from sklearn.preprocessing import MinMaxScaler, RobustScaler
 
 
+
 def save_as_json(filepath, data):
     with open(filepath, 'w') as fp:
         json.dump(data, fp)
@@ -23,6 +24,7 @@ def include_mutations(mutations, include_list):
             f_mutations.extend(mutations[clade])
     return f_mutations
 
+
 def get_clades_pos_alt():
     clades_mutations = list()
     clades_path = "https://raw.githubusercontent.com/nextstrain/ncov/557efcbe06641af72c28d3f7f0fa511b6f16e89c/defaults/clades.tsv"
@@ -33,6 +35,7 @@ def get_clades_pos_alt():
         ALT = sample_row["alt"].values[0]
         clades_mutations.append("{}>{}".format(str(POS), str(ALT)))
     return list(set(clades_mutations))
+
 
 def deserialize(var_lst, sample_name, samples_name_idx):
     var_txt = ""
@@ -85,6 +88,7 @@ def remove_single_mutation(dataframe, key):
             dataframe = dataframe[~((dataframe['REF'] == key[0]) & (dataframe['POS'] == key[1]) & (dataframe['ALT'] == key[2]))]
     return dataframe
 
+
 def set_serial_cluster_numbers(cluster_labels):
     cluster_labels = cluster_labels.tolist()
     u_clusters = np.sort(list(set(cluster_labels)))
@@ -95,12 +99,14 @@ def set_serial_cluster_numbers(cluster_labels):
     for c_label in cluster_labels:
         ordered_labels.append(replacement_indices[c_label])
     return ordered_labels
-    
+
+
 def plot_mat(samples_distance_matrix):
     plt.matshow(samples_distance_matrix)
     plt.colorbar()
     plt.show()
-    
+
+
 def check_uniform_clusters(clustered_df, n_u_clusters):
     for idx in range(n_u_clusters):
         cluster = clustered_df[clustered_df["Cluster"] == idx] 
@@ -112,8 +118,18 @@ def check_uniform_clusters(clustered_df, n_u_clusters):
             print()
             print(cluster)
             print("------------------------")
-    
-def clean_cluster(cluster, new_cluster_num):
+
+def clean_cluster_by_mutation(cluster):
+    cluster = cluster.split("\n")[1:]
+    cluster = cluster[0:len(cluster)-1][0].split(",")
+    af = float(cluster[-2])
+    s_name = cluster[1]
+    mut = [cluster[3], cluster[4], cluster[5], cluster[6]]
+    #print(cluster, mut, af, s_name)
+    #print()
+    return mut, af, s_name
+
+def clean_cluster(cluster, new_cluster_num=None):
     cluster = cluster.split("\n")[1:]
     cluster = cluster[0:len(cluster)-1]
     cleaned_cluster = list()
@@ -121,7 +137,8 @@ def clean_cluster(cluster, new_cluster_num):
         item = item.split(",")
         l = len(item)
         clean_row = item[1:]
-        clean_row.append(str(new_cluster_num))
+        if new_cluster_num is not None:
+            clean_row.append(str(new_cluster_num))
         cleaned_cluster.append(clean_row)
     return cleaned_cluster
                         
