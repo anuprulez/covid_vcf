@@ -122,11 +122,11 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
     new_clusters_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
-    new_clusters_df = new_clusters_df.sort_values(by=["Cluster", "POS", "AF"], ascending=[True, True, False])
+    new_clusters_df = new_clusters_df.sort_values(by=["POS"], ascending=[True])
     new_clusters_df.to_csv("data/clusters_of_co-occurring_samples.csv")
     
     final_df = new_clusters_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
-    final_df = final_df.sort_values(by=["Cluster", "POS", "AF"], ascending=[True, True, False])
+    final_df = final_df.sort_values(by=["POS"], ascending=[True])
     final_df.to_csv("data/final_clusters_of_co-occurring_samples.csv")
     
 
@@ -140,7 +140,8 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     clean_scatter_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])    
     clean_scatter_df = clean_scatter_df.drop(["annotations"], axis=1)
     clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
-    clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster", "AF"], ascending=[True, False])
+    clean_scatter_df["POS"] = clean_scatter_df["POS"].astype(int)
+    clean_scatter_df = clean_scatter_df.sort_values(by=["POS"], ascending=[True])
     ordered_c_labels = utils.set_serial_cluster_numbers(clean_scatter_df["Cluster"])
     clean_scatter_df["Cluster"] = ordered_c_labels
     n_u_clusters = len(list(set(ordered_c_labels)))
@@ -163,10 +164,23 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     new_clusters_df["MinAF"] = new_clusters_df["MinAF"].astype(float)
     new_clusters_df["MaxAF"] = new_clusters_df["MaxAF"].astype(float)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
-    new_clusters_df["MutationCluster"] = new_clusters_df["MutationCluster"].astype(int)
-    new_clusters_df = new_clusters_df.sort_values(by=["MutationCluster", "POS", "MinAF", "MaxAF"], ascending=[True, True, False, False])
-    new_clusters_df.to_csv("data/merged_clusters_of_mutations.csv") 
+    new_clusters_df = new_clusters_df.sort_values(by=["POS"], ascending=[True])
+    new_clusters_df.to_csv("data/merged_clusters_of_mutations.csv")
     
-    extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
-    #plotly.offline.plot(fig, filename='data/cluster_variants.html')
-    #fig.show()
+    # extract same POS with different REF and ALT clusters
+    same_pos_df = None
+    all_POS = new_clusters_df["POS"].to_list()
+    unique_POS = list(set(all_POS))
+    for i in range(len(unique_POS)):
+        row = new_clusters_df.take([i])
+        POS = unique_POS[i]
+        POS_rows = new_clusters_df[new_clusters_df["POS"] == POS]
+        if len(POS_rows) > 1:
+            if same_pos_df is None:
+                same_pos_df = POS_rows
+            same_pos_df = pd.concat([same_pos_df, POS_rows], ignore_index=True)
+    same_pos_df["POS"] = same_pos_df["POS"].astype(int)
+    same_pos_df = same_pos_df.sort_values(by=["POS"], ascending=[True])
+    same_pos_df.to_csv("data/same_pos_diff_ref_alt.csv")
+    # get repeated samples with same mutations 
+    #extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
