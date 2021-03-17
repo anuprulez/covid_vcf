@@ -59,7 +59,6 @@ def deserialize(var_lst, sample_name, samples_name_idx):
 
 
 def transform_integers(train_data):
-    print(train_data)
     scaler = RobustScaler(with_centering=False)
     #tr_feature_sname = feature_reshape(train_data[:, 0])
     tr_feature_pos = feature_reshape(train_data[:, 0])
@@ -67,7 +66,6 @@ def transform_integers(train_data):
     transformed_pos = scaler.fit_transform(tr_feature_pos)
     #train_data_transformed = np.hstack((transformed_sname, transformed_pos, train_data[:, 2:]))
     train_data_transformed = np.hstack((transformed_pos, train_data[:, 1:]))
-    print(train_data_transformed)
     return train_data_transformed
 
 
@@ -92,11 +90,12 @@ def remove_single_mutation(dataframe, key):
             single_instance = single_instance[0:len(single_instance)-1][0].split(",")
             single_instance = single_instance[1:len(single_instance)-1]
             single_mut.extend([single_instance])
-    single_mut_df = pd.DataFrame(single_mut, columns=["Sample", "Index", "REF", "POS", "ALT", "AF", "MutationCluster"])
-    single_mut_df = single_mut_df.drop(["Index", "MutationCluster"], axis=1)
-    single_mut_df.to_csv("data/excluded_mutations.csv")
-    print("# of singleton mutations removed: {}".format(str(len(single_mut_df))))
-    return dataframe
+    single_mut_df = pd.DataFrame(single_mut, columns=["Sample", "Index", "REF", "POS", "ALT", "AF"])
+    num_excluded_cluster = len(single_mut_df.index)
+    single_mut_df["Cluster"] = np.arange(start=-1, stop=-num_excluded_cluster-1, step=-1)
+    #dataframe = pd.concat([dataframe, single_mut_df], ignore_index=True)
+    print("# of singleton mutations removed: {}".format(str(num_excluded_cluster)))
+    return dataframe, single_mut_df
 
 
 def set_serial_cluster_numbers(cluster_labels):
@@ -127,7 +126,7 @@ def check_uniform_clusters(clustered_df, n_u_clusters):
             print("Cluster {} is not optimal".format(str(idx)))
             print()
             print(cluster)
-            print("------------------------")
+            print()
 
 def clean_cluster_by_mutation(cluster):
     cluster = cluster.split("\n")[1:]

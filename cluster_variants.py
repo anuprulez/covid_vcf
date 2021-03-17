@@ -12,6 +12,10 @@ from sklearn import metrics
 
 import utils
 
+save_path = "data/outputs/Boston/all/" #"data/" #"data/outputs/Boston/all"
+
+
+
 color_dict = {0: "red", 1: "green", 2: "blue"}
 N_C = 3
 
@@ -123,11 +127,11 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
     new_clusters_df["Cluster"] = new_clusters_df["Cluster"].astype(int)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["POS"], ascending=[True])
-    new_clusters_df.to_csv("data/clusters_of_co-occurring_samples.csv")
+    #new_clusters_df.to_csv("{}clusters_of_co-occurring_samples.csv".format(save_path), index=False)
     
     final_df = new_clusters_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
     final_df = final_df.sort_values(by=["POS"], ascending=[True])
-    final_df.to_csv("data/final_clusters_of_co-occurring_samples.csv")
+    final_df.to_csv("{}final_clusters_of_co-occurring_samples.csv".format(save_path), index=False)
     
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH):
@@ -135,22 +139,29 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     print("Clustering mutations...")
     cluster_labels = find_optimal_clusters(features)
     
-    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels, var_name_df)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster", "annotations"], index=None)
+    scatter_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster"], index=None)
     scatter_df["Cluster"] = scatter_df["Cluster"].astype(str)
-    clean_scatter_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])    
-    clean_scatter_df = clean_scatter_df.drop(["annotations"], axis=1)
+    clean_scatter_df, single_mut_df = utils.remove_single_mutation(scatter_df, ["REF", "POS", "ALT"])
+    single_mut_df.to_csv("{}excluded_mutations.csv".format(save_path), index=False)
     clean_scatter_df["Cluster"] = clean_scatter_df["Cluster"].astype(int)
     clean_scatter_df["POS"] = clean_scatter_df["POS"].astype(int)
-    clean_scatter_df = clean_scatter_df.sort_values(by=["POS"], ascending=[True])
+    clean_scatter_df = clean_scatter_df.sort_values(by=["Cluster"], ascending=[True])
     ordered_c_labels = utils.set_serial_cluster_numbers(clean_scatter_df["Cluster"])
     clean_scatter_df["Cluster"] = ordered_c_labels
-    n_u_clusters = len(list(set(ordered_c_labels)))
-    utils.check_uniform_clusters(clean_scatter_df, n_u_clusters)
-    clean_scatter_df.to_csv("data/clusters_of_mutations.csv")
     
+    # check if clusters are uniform
+    utils.check_uniform_clusters(clean_scatter_df, len(list(set(ordered_c_labels))))
+    clean_scatter_df.to_csv("{}clusters_of_mutations.csv".format(save_path), index=False)
+    
+    # merge clusters with more than one mutation with singleton clusters
+    clusters_with_singletons = pd.concat([clean_scatter_df, single_mut_df], ignore_index=True)
+    clusters_with_singletons.to_csv("{}clusters_of_mutations_with_singletons.csv".format(save_path), index=False)
+    
+    # merge clusters
     merge_clusters = list()
-    for i in range(n_u_clusters):
-        cluster_df = clean_scatter_df[clean_scatter_df["Cluster"] == int(i)]
+    n_u_clusters = list(set(clusters_with_singletons["Cluster"].to_list()))
+    for clstr in n_u_clusters:
+        cluster_df = clusters_with_singletons[clusters_with_singletons["Cluster"] == clstr]
         max_af = np.max(cluster_df["AF"])
         min_af = np.min(cluster_df["AF"])
         sample_names = cluster_df["Sample"].to_list()
@@ -165,7 +176,7 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     new_clusters_df["MaxAF"] = new_clusters_df["MaxAF"].astype(float)
     new_clusters_df["POS"] = new_clusters_df["POS"].astype(int)
     new_clusters_df = new_clusters_df.sort_values(by=["POS"], ascending=[True])
-    new_clusters_df.to_csv("data/merged_clusters_of_mutations.csv")
+    new_clusters_df.to_csv("{}merged_clusters_of_mutations.csv".format(save_path), index=False)
     
     # extract same POS with different REF and ALT clusters
     same_pos_df = None
@@ -181,6 +192,6 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
             same_pos_df = pd.concat([same_pos_df, POS_rows], ignore_index=True)
     same_pos_df["POS"] = same_pos_df["POS"].astype(int)
     same_pos_df = same_pos_df.sort_values(by=["POS"], ascending=[True])
-    same_pos_df.to_csv("data/same_pos_diff_ref_alt.csv")
+    same_pos_df.to_csv("{}same_pos_diff_ref_alt.csv".format(save_path), index=False)
     # get repeated samples with same mutations 
-    #extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
+    extract_co_occuring_samples(clean_scatter_df, ordered_c_labels)
