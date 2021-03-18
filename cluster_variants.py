@@ -12,10 +12,14 @@ from sklearn import metrics
 
 import utils
 
-SAVE_PATH = "data/outputs/Boston/all/"
+SAVE_PATH = "data/outputs/Boston/clades/"
+
+#SAVE_PATH = "data/outputs/Pre-COG-UK/all/"
+
+#SAVE_PATH = "data/outputs/Pre-COG-UK/all/"
 
 
-def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
+def transform_variants(samples_data, samples_name_idx):
     detailed_samples = utils.read_json("data/train_n_variants.json")
     sample_names = utils.read_json("data/train_all_variants.json")
     n_samples = list()
@@ -38,7 +42,7 @@ def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
         var_af_df.extend(var_af)
         var_ref_df.extend(var_ref)
         var_alt_df.extend(var_alt)
-    cluster_mutations(samples_data, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH)
+    cluster_mutations(samples_data, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx)
 
 
 def find_optimal_clusters(features):
@@ -108,17 +112,18 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
             merged_row.extend([min(l_af), max(l_af), len(l_names), ",".join(l_names)])
             by_mutations.extend([merged_row])
         cluster_ctr += 1
+    
     ## TODO: Fix by-mutations report
     
-    co_occur_variants_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
+    co_occur_variants_df = pd.DataFrame(merge_clusters, columns=["Sample", "Index", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
     
     co_occur_variants_df = co_occur_variants_df.astype({'Cluster': 'int', 'POS': 'int'})
-    save_co_occur_variants_df = co_occur_variants_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
+    save_co_occur_variants_df = co_occur_variants_df.drop(["Index", "ClusterMutations"], axis=1)
     save_co_occur_variants_df = save_co_occur_variants_df.sort_values(by=["Cluster", "POS"], ascending=[True, True])
     utils.save_dataframe(save_co_occur_variants_df, c_co_occurring_mut_path)
     
 
-def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH):
+def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx):
 
     features_uniform = ["REF", "POS", "ALT"]
     column_names = ["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster"]
@@ -137,6 +142,8 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     clustered_mut_df, single_mut_df = utils.remove_single_mutation(variants_df, features_uniform)
 
     # save singleton mutations
+    single_mut_df = single_mut_df.astype({'Cluster': 'int', 'POS': 'int'})
+    single_mut_df = single_mut_df.sort_values(by=["Cluster"], ascending=[True])
     utils.save_dataframe(single_mut_df, excluded_mutations_path)
     
     clustered_mut_df = clustered_mut_df.astype({'Cluster': 'int', 'POS': 'int'})
@@ -181,13 +188,7 @@ def merge_all_clusters(clusters_with_singletons_df):
         row.extend([to_csv[0][-1]])
         merge_clusters.extend([row])
     merge_clusters_df = pd.DataFrame(merge_clusters, columns=column_names)
-    
-    #merge_clusters_df["MinAF"] = merge_clusters_df["MinAF"].astype(float)
-    #merge_clusters_df["MaxAF"] = merge_clusters_df["MaxAF"].astype(float)
-    #merge_clusters_df["POS"] = merge_clusters_df["POS"].astype(int)
-    
     merge_clusters_df = merge_clusters_df.astype({'MinAF': 'float64', 'MaxAF': 'float64', 'POS': 'int'})
-    
     merge_clusters_df = merge_clusters_df.sort_values(by=["POS"], ascending=[True])
     utils.save_dataframe(merge_clusters_df, merged_c_mutations_path)
     return merge_clusters_df
@@ -203,7 +204,6 @@ def create_dataset_with_same_pos(all_clusters_df):
                 same_pos_df = POS_rows
             else:
                 same_pos_df = pd.concat([same_pos_df, POS_rows], ignore_index=True)
-    #same_pos_df["POS"] = same_pos_df["POS"].astype(int)
     same_pos_df = same_pos_df.astype({'POS': 'int'})
     same_pos_df = same_pos_df.sort_values(by=["POS"], ascending=[True])
     utils.save_dataframe(same_pos_df, "{}same_pos_diff_ref_alt.csv".format(SAVE_PATH))

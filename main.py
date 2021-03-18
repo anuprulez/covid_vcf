@@ -22,9 +22,6 @@ COG_UK_2020_09_17 = "data/cog_uk_vcf/cog_20200917_by_sample.tsv"
 COG_20201120 = "data/cog_uk_vcf/cog_20201120_by_sample.tsv"
 '''
 
-
-AF_CUTOFF = 1.0
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv" 
@@ -39,7 +36,6 @@ CLADES_MUTATIONS = "data/clades/parsed_nuc_clades.json"
 
 def read_files(path=BOSTON_DATA_PATH):
     """
-    
     """
     print("Extracting data from tabular variants file...")
     take_cols = ["Sample", "POS", "REF", "ALT", "AF"]
@@ -50,8 +46,9 @@ def read_files(path=BOSTON_DATA_PATH):
     samples_dict = dict()
     max_len_REF = 0
     max_len_ALT = 0
+    AF_CUTOFF = 1.0
     #selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
-    selected_mutations = [] #utils.get_clades_pos_alt()
+    selected_mutations = utils.get_clades_pos_alt()
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])
@@ -85,13 +82,13 @@ def read_files(path=BOSTON_DATA_PATH):
 
 
 def encode_variants(samples, samples_name_idx, max_REF, max_ALT):    
-    print("Encoded variants...")
+    print("Encode and transform variants...")
     variants = transform_variants.TransformVariants()
     transformed_samples = variants.get_variants(samples, samples_name_idx, max_REF, max_ALT, "train")
     features = np.asarray(transformed_samples)
     features = features.astype('float32')
     #features = utils.transform_integers(features)
-    cluster_variants.transform_variants(features, samples_name_idx, BOSTON_DATA_PATH)
+    cluster_variants.transform_variants(features, samples_name_idx)
 
   
 if __name__ == "__main__":
