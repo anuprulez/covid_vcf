@@ -116,6 +116,9 @@ def plot_mat(samples_distance_matrix):
     plt.show()
 
 
+def save_dataframe(dataframe, path):
+    dataframe.to_csv(path, index=False)
+
 def check_uniform_clusters(clustered_df, n_u_clusters):
     for idx in range(n_u_clusters):
         cluster = clustered_df[clustered_df["Cluster"] == idx] 
