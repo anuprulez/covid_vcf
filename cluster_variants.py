@@ -12,12 +12,8 @@ from sklearn import metrics
 
 import utils
 
-save_path = "data/outputs/Boston/all/"
+SAVE_PATH = "data/outputs/Boston/all/"
 
-
-
-color_dict = {0: "red", 1: "green", 2: "blue"}
-N_C = 3
 
 def transform_variants(samples_data, samples_name_idx, BOSTON_DATA_PATH):
     detailed_samples = utils.read_json("data/train_n_variants.json")
@@ -51,10 +47,12 @@ def find_optimal_clusters(features):
     print("Number of unique clusters: {}".format(str(len(list(set(cluster_labels))))))
     cluster_silhouette_score = metrics.silhouette_score(features, cluster_labels, metric='euclidean')
     return cluster_labels
-    
+
+
 def extract_co_occuring_samples(mutations_df, mutations_labels):
     u_mutation_labels = list(set(mutations_labels))
     clusters_samples = list()
+    c_co_occurring_mut_path = "{}clusters_of_co-occurring_samples.csv".format(SAVE_PATH)
     for c_label in u_mutation_labels:
         cluster_rows = mutations_df[mutations_df["Cluster"] == c_label]
         if len(cluster_rows) > 0:
@@ -110,60 +108,51 @@ def extract_co_occuring_samples(mutations_df, mutations_labels):
             merged_row.extend([min(l_af), max(l_af), len(l_names), ",".join(l_names)])
             by_mutations.extend([merged_row])
         cluster_ctr += 1
-    ## TODO: Fix by mutations report. Commented out
-    '''by_mut_df = pd.DataFrame(by_mutations, columns=["REF", "POS", "ALT", "ClusterMutations", "MinAF", "MaxAF", "NumberOfSamples", "Samples"])
-    by_mut_df["NumberOfSamples"] = by_mut_df["NumberOfSamples"].astype(int)
-    by_mut_df = by_mut_df.sort_values(by=["NumberOfSamples", "POS"], ascending=[False, True])
-    by_mut_df.to_csv("data/by_mutations.csv")
-    
-    final_by_mutations = by_mut_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
-    final_by_mutations["NumberOfSamples"] = final_by_mutations["NumberOfSamples"].astype(int)
-    final_by_mutations["POS"] = final_by_mutations["POS"].astype(int)
-    final_by_mutations["AF"] = final_by_mutations["AF"].astype(float)
-    final_by_mutations = final_by_mutations.sort_values(by=["AF"], ascending=[False])
-    final_by_mutations.to_csv("data/final_by_mutations.csv")'''
+    ## TODO: Fix by-mutations report
     
     co_occur_variants_df = pd.DataFrame(merge_clusters, columns=["Sample", "SampleIndex", "REF", "POS", "ALT", "AF", "ClusterMutations", "Cluster"])
-    co_occur_variants_df["Cluster"] = co_occur_variants_df["Cluster"].astype(int)
-    co_occur_variants_df["POS"] = co_occur_variants_df["POS"].astype(int)
     
-    co_occur_variants_df = co_occur_variants_df.sort_values(by=["Cluster"], ascending=[True])    
+    co_occur_variants_df = co_occur_variants_df.astype({'Cluster': 'int', 'POS': 'int'})
     save_co_occur_variants_df = co_occur_variants_df.drop(["SampleIndex", "ClusterMutations"], axis=1)
-    save_co_occur_variants_df = save_co_occur_variants_df.sort_values(by=["Cluster"], ascending=[True])
-    #final_df.to_csv("{}clusters_of_co-occurring_samples.csv".format(save_path), index=False)
-    utils.save_dataframe(save_co_occur_variants_df, "{}clusters_of_co-occurring_samples.csv".format(save_path))
+    save_co_occur_variants_df = save_co_occur_variants_df.sort_values(by=["Cluster", "POS"], ascending=[True, True])
+    utils.save_dataframe(save_co_occur_variants_df, c_co_occurring_mut_path)
     
 
 def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, var_af_df, var_ref_df, var_alt_df, samples_name_idx, BOSTON_DATA_PATH):
+
+    features_uniform = ["REF", "POS", "ALT"]
+    column_names = ["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster"]
+    excluded_mutations_path = "{}excluded_mutations.csv".format(SAVE_PATH)
+    cluster_mutations_path = "{}clusters_of_mutations.csv".format(SAVE_PATH)
+    cluster_mutations_singletons_path = "{}clusters_of_mutations_with_singletons.csv".format(SAVE_PATH)
+    
     print("Shape of features: ({},{})".format(str(features.shape[0]), str(features.shape[1])))
     print("Clustering mutations...")
     cluster_labels = find_optimal_clusters(features)
 
-    variants_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels)), columns=["Sample", "Index", "REF", "POS", "ALT", "AF",  "Cluster"], index=None)
-    variants_df["Cluster"] = variants_df["Cluster"].astype(str)
+    # create dataframe of variants
+    variants_df = pd.DataFrame(list(zip(s_name_df, s_idx_df, var_ref_df, var_pos_df, var_alt_df, var_af_df, cluster_labels)), columns=column_names, index=None)
     
-    # separate dataframes with > 1 mut clusters and singleton clusters
-    clustered_mut_df, single_mut_df = utils.remove_single_mutation(variants_df, ["REF", "POS", "ALT"])
+    # separate dataframes with > 1 mutation clusters and singleton clusters
+    clustered_mut_df, single_mut_df = utils.remove_single_mutation(variants_df, features_uniform)
 
     # save singleton mutations
-    #single_mut_df.to_csv("{}excluded_mutations.csv".format(save_path), index=False)
-    utils.save_dataframe(single_mut_df, "{}excluded_mutations.csv".format(save_path))
-
-    clustered_mut_df["Cluster"] = clustered_mut_df["Cluster"].astype(int)
-    clustered_mut_df["POS"] = clustered_mut_df["POS"].astype(int)
+    utils.save_dataframe(single_mut_df, excluded_mutations_path)
+    
+    clustered_mut_df = clustered_mut_df.astype({'Cluster': 'int', 'POS': 'int'})
     clustered_mut_df = clustered_mut_df.sort_values(by=["Cluster"], ascending=[True])
+    
+    # set serial numbers to all clusters
     ordered_c_labels = utils.set_serial_cluster_numbers(clustered_mut_df["Cluster"])
     clustered_mut_df["Cluster"] = ordered_c_labels
 
     # check if clusters are uniform
     utils.check_uniform_clusters(clustered_mut_df, len(list(set(ordered_c_labels))))
-    #clustered_mut_df.to_csv("{}clusters_of_mutations.csv".format(save_path), index=False)
-    utils.save_dataframe(clustered_mut_df, "{}clusters_of_mutations.csv".format(save_path))
+    utils.save_dataframe(clustered_mut_df, cluster_mutations_path)
 
     # merge clusters with more than one mutation with singleton clusters
     clusters_with_singletons_df = pd.concat([clustered_mut_df, single_mut_df], ignore_index=True)
-    #clusters_with_singletons_df.to_csv("{}clusters_of_mutations_with_singletons.csv".format(save_path), index=False)
-    utils.save_dataframe(clusters_with_singletons_df, "{}clusters_of_mutations_with_singletons.csv".format(save_path))
+    utils.save_dataframe(clusters_with_singletons_df, cluster_mutations_singletons_path)
 
     # merge clusters
     merged_clusters_df = merge_all_clusters(clusters_with_singletons_df)
@@ -177,6 +166,9 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
 
 def merge_all_clusters(clusters_with_singletons_df):
     merge_clusters = list()
+    column_names = ["REF", "POS", "ALT", "MinAF", "MaxAF", "NumSamples", "SampleNames", "MutationCluster"]
+    merged_c_mutations_path = "{}merged_clusters_of_mutations.csv".format(SAVE_PATH)
+    
     n_u_clusters = list(set(clusters_with_singletons_df["Cluster"].to_list()))
     for clstr in n_u_clusters:
         cluster_df = clusters_with_singletons_df[clusters_with_singletons_df["Cluster"] == clstr]
@@ -188,13 +180,16 @@ def merge_all_clusters(clusters_with_singletons_df):
         row.extend([min_af, max_af, len(sample_names), ",".join(sample_names)])
         row.extend([to_csv[0][-1]])
         merge_clusters.extend([row])
-    merge_clusters_df = pd.DataFrame(merge_clusters, columns=["REF", "POS", "ALT", "MinAF", "MaxAF", "NumSamples", "SampleNames", "MutationCluster"])
-    merge_clusters_df["MinAF"] = merge_clusters_df["MinAF"].astype(float)
-    merge_clusters_df["MaxAF"] = merge_clusters_df["MaxAF"].astype(float)
-    merge_clusters_df["POS"] = merge_clusters_df["POS"].astype(int)
+    merge_clusters_df = pd.DataFrame(merge_clusters, columns=column_names)
+    
+    #merge_clusters_df["MinAF"] = merge_clusters_df["MinAF"].astype(float)
+    #merge_clusters_df["MaxAF"] = merge_clusters_df["MaxAF"].astype(float)
+    #merge_clusters_df["POS"] = merge_clusters_df["POS"].astype(int)
+    
+    merge_clusters_df = merge_clusters_df.astype({'MinAF': 'float64', 'MaxAF': 'float64', 'POS': 'int'})
+    
     merge_clusters_df = merge_clusters_df.sort_values(by=["POS"], ascending=[True])
-    #merge_clusters_df.to_csv("{}merged_clusters_of_mutations.csv".format(save_path), index=False)
-    utils.save_dataframe(merge_clusters_df, "{}merged_clusters_of_mutations.csv".format(save_path))
+    utils.save_dataframe(merge_clusters_df, merged_c_mutations_path)
     return merge_clusters_df
     
 
@@ -208,7 +203,7 @@ def create_dataset_with_same_pos(all_clusters_df):
                 same_pos_df = POS_rows
             else:
                 same_pos_df = pd.concat([same_pos_df, POS_rows], ignore_index=True)
-    same_pos_df["POS"] = same_pos_df["POS"].astype(int)
+    #same_pos_df["POS"] = same_pos_df["POS"].astype(int)
+    same_pos_df = same_pos_df.astype({'POS': 'int'})
     same_pos_df = same_pos_df.sort_values(by=["POS"], ascending=[True])
-    #same_pos_df.to_csv("{}same_pos_diff_ref_alt.csv".format(save_path), index=False)
-    utils.save_dataframe(same_pos_df, "{}same_pos_diff_ref_alt.csv".format(save_path))
+    utils.save_dataframe(same_pos_df, "{}same_pos_diff_ref_alt.csv".format(SAVE_PATH))

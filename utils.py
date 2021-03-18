@@ -94,7 +94,7 @@ def remove_single_mutation(dataframe, key):
     num_excluded_cluster = len(single_mut_df.index)
     single_mut_df["Cluster"] = np.arange(start=-1, stop=-num_excluded_cluster-1, step=-1)
     #dataframe = pd.concat([dataframe, single_mut_df], ignore_index=True)
-    print("# of singleton mutations removed: {}".format(str(num_excluded_cluster)))
+    print("Number of singleton mutations removed: {}".format(str(num_excluded_cluster)))
     return dataframe, single_mut_df
 
 
