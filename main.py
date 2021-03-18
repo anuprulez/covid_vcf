@@ -25,8 +25,8 @@ COG_20201120 = "data/cog_uk_vcf/cog_20201120_by_sample.tsv"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 BOSTON_DATA_PATH = "data/boston_vcf/bos_by_sample.tsv" 
-COG_UK_2020_09_17 = "data/cog_uk_vcf/cog_20200917_by_sample.tsv"
-COG_20201120 = "data/cog_uk_vcf/cog_20201120_by_sample.tsv"
+COG_UK_2020_09_17_PRE = "data/cog_uk_vcf/cog_20200917_by_sample.tsv"
+COG_20201120_POST = "data/cog_uk_vcf/cog_20201120_by_sample.tsv"
 #FULL_LIST = ['19A', '20H/501Y.V2', '20A', '20E (EU1)', '20D', '20I/501Y.V1', '20B', '20F', '19B', '20J/501Y.V3', '20G', '20C']
 CLADES_EXCLUDE_LIST = [] #['19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3']
 #CLADES_EXCLUDE_LIST = ['19A'] # '19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)', '20F', '20G', '20H/501Y.V2', '20I/501Y.V1', '20J/501Y.V3'
@@ -34,7 +34,7 @@ CLADES_EXCLUDE_LIST = [] #['19A', '19B', '20A', '20B', '20C', '20D', '20E (EU1)'
 CLADES_MUTATIONS = "data/clades/parsed_nuc_clades.json"
 
 
-def read_files(path=BOSTON_DATA_PATH):
+def read_files(path=COG_20201120_POST):
     """
     """
     print("Extracting data from tabular variants file...")
@@ -46,9 +46,10 @@ def read_files(path=BOSTON_DATA_PATH):
     samples_dict = dict()
     max_len_REF = 0
     max_len_ALT = 0
-    AF_CUTOFF = 1.0
+    #AF_CUTOFF = 0.8
+    AF_CUTOFF = 1.1
     #selected_mutations = utils.include_mutations(utils.read_json(CLADES_MUTATIONS), CLADES_EXCLUDE_LIST)
-    selected_mutations = utils.get_clades_pos_alt()
+    selected_mutations = [] #utils.get_clades_pos_alt()
     for idx in range(len(by_sample_dataframe_take_cols)):
         sample_row = by_sample_dataframe_take_cols.take([idx])
         check_var = "{}>{}>{}".format(sample_row["REF"].values[0], sample_row["POS"].values[0], sample_row["ALT"].values[0])
@@ -59,7 +60,7 @@ def read_files(path=BOSTON_DATA_PATH):
         sample_name = sample_row["Sample"].values[0]
         ALT = sample_row["ALT"].values[0]
         # exclude signature mutations from known clades such as 19A, 19B .. in search of novel mutations.
-        if check_var_pos_alt not in selected_mutations and AF <= AF_CUTOFF:
+        if check_var_pos_alt not in selected_mutations and AF < AF_CUTOFF:
             variant = "{}>{}>{}>{}>{}".format(sample_name, POS, REF, ALT, AF)
             if max_len_ALT < len(ALT):
                 max_len_ALT = len(ALT)

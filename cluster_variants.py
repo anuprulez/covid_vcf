@@ -12,11 +12,11 @@ from sklearn import metrics
 
 import utils
 
-SAVE_PATH = "data/outputs/Boston/clades/"
+#SAVE_PATH = "data/outputs/Boston/clades/"
 
-#SAVE_PATH = "data/outputs/Pre-COG-UK/all/"
+#SAVE_PATH = "data/outputs/Pre-COG-UK/clades/"
 
-#SAVE_PATH = "data/outputs/Pre-COG-UK/all/"
+SAVE_PATH = "data/outputs/Post-COG-UK/all/"
 
 
 def transform_variants(samples_data, samples_name_idx):
@@ -164,11 +164,51 @@ def cluster_mutations(features, s_name_df, s_idx_df, var_name_df, var_pos_df, va
     # merge clusters
     merged_clusters_df = merge_all_clusters(clusters_with_singletons_df)
 
+    # separate insertions, deletions and substitutions
+    separate_mutations_by_indel_substitution(merged_clusters_df)
+
     # extract same POS using all clusters with different REF and ALT
     create_dataset_with_same_pos(merged_clusters_df)
 
     # get repeated samples with same mutations using clustered mutations dataframe
     extract_co_occuring_samples(clustered_mut_df, ordered_c_labels)
+
+
+def separate_mutations_by_indel_substitution(cluster_df):
+    length_df = len(cluster_df.index)
+    only_insertions = None
+    only_deletions = None
+    only_substitutions = None
+    for idx in range(length_df):
+        row = cluster_df.take([idx])
+        REF = str(row["REF"].values[0])
+        ALT = str(row["ALT"].values[0])
+        if len(REF) > len(ALT):
+            if only_deletions is None:
+                only_deletions = row
+            else:
+                only_deletions = pd.concat([only_deletions, row], ignore_index=True)
+        elif len(ALT) > len(REF):
+            if only_insertions is None:
+                only_insertions = row
+            else:
+                only_insertions = pd.concat([only_insertions, row], ignore_index=True)
+        else:
+            #print(REF, ALT, len(REF), len(ALT))
+            if only_substitutions is None:
+                only_substitutions = row
+            else:
+                only_substitutions = pd.concat([only_substitutions, row], ignore_index=True)
+
+    # save the dataframes
+    only_insertions = only_insertions.sort_values(by=["POS"])
+    utils.save_dataframe(only_insertions, "{}only_insertions.csv".format(SAVE_PATH))
+    
+    only_deletions = only_deletions.sort_values(by=["POS"])
+    utils.save_dataframe(only_deletions, "{}only_deletions.csv".format(SAVE_PATH))
+    
+    only_substitutions = only_substitutions.sort_values(by=["POS"])
+    utils.save_dataframe(only_substitutions, "{}only_substitutions.csv".format(SAVE_PATH))
 
 
 def merge_all_clusters(clusters_with_singletons_df):
