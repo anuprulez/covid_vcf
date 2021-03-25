@@ -134,6 +134,12 @@
     
     <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af_clades/only_substitutions.csv">Post-COG-UK AF(< 0.8) & clades ex substitutions</option>
     
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Common/all/common_pos_mc_pre_post_cog_uk.csv">Common POS (Pre and Post-COG-UK)</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Common/all/common_pos_mc_boston_pre_post_cog_uk.csv">Common POS (Boston, Pre and Post-COG-UK)</option>
+    
+    
+    
   </select>
   
   
@@ -159,32 +165,39 @@
   
   <input id="txt_maxAF" type="text">
   <input id="btn_maxAF" type="button" value="Apply MaxAF" onclick="apply_maxAF(this)">
+  
+  <div>
+  
+  Number of rows: <label id="num_rows">0</label>
+  
+  </div>
 
  <table id="specific_run_table" class="table table-striped table-bordered" style="width:95%; margin-top:1%">
 
  </table>
     
         
-    <script type="text/javascript">
+<script type="text/javascript">
     
     global_data = [];
+    global_columns = [];
     
     function clearTable() {
         $('#specific_run_table').empty();
     }
-    
+
     function apply_minAF(e) {
         minAFOpe = $("#filter_minaf").val();
         txtValMin = $("#txt_minAF").val();
         col = "MinAF";
         if (minAFOpe === "less_than") {
-            set_table(global_data, "<", txtValMin, col);
+            set_table(global_data, global_columns, "<", txtValMin, col);
         }
         else if(minAFOpe === "greater_than_equal") {
-            set_table(global_data, ">=", txtValMin, col);
+            set_table(global_data, global_columns, ">=", txtValMin, col);
         }
     }
-    
+
     function apply_maxAF(e) {
         maxAFOpe = $("#filter_maxaf").val();
         txtValMax = $("#txt_maxAF").val();
@@ -192,14 +205,14 @@
         col = "MaxAF";
         console.log(maxAFOpe, txtValMax);
         if (maxAFOpe === "less_than") {
-            set_table(global_data, "<", txtValMax, col);
+            set_table(global_data, global_columns, "<", txtValMax, col);
         }
         else if(maxAFOpe === "greater_than_equal") {
-            set_table(global_data, ">=", txtValMax, col);
+            set_table(global_data, global_columns, ">=", txtValMax, col);
         }
     }
 
-    function set_table(data, operator, value, col) {
+    function set_table(data, cols, operator, value, col) {
         filteredData = [];
         for(i=0; i< data.length; i++) {
             af = data[i][col];
@@ -214,25 +227,28 @@
                 }
             }
         }
-        const columns = ["REF","POS", "ALT", "MinAF", "MaxAF", "NumSamples", "MutationCluster"]
-        crateTable(filteredData, columns)
+        crateTable(filteredData, cols);
+        $("#num_rows").text(filteredData.length);
     }
-        
 
     function get_analysis(e) {
       var path = e.value;
       d3.csv(path)
           .get(function(data) {
-              const columns = ["REF","POS", "ALT", "MinAF", "MaxAF", "NumSamples", "MutationCluster"]
+              columns = data.columns;
+              idx = columns.indexOf("SampleNames")
+              if (idx > -1) {
+                   columns.splice(idx, 1);
+              }
               global_data = data;
-              crateTable(data, columns)
+              global_columns = columns;
+              crateTable(data, columns);
+              $("#num_rows").text(data.length);
        });
     }
-    
-    
-    
-let crateTable = function (data,columns) {
-    clearTable()
+
+let crateTable = function (data, columns) {
+    clearTable();
     var table = d3.select('#specific_run_table')
       var thead = table.append('thead')
       var tbody = table.append('tbody')
@@ -259,11 +275,10 @@ let crateTable = function (data,columns) {
         .enter()
       .append('td')
         .text(function (d) { return d.value })
-
     return table;
   }
 	 
-    </script>
+</script>
   </div>
   </body>
 </html>
