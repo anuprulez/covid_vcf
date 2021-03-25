@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+   
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3-axis.v1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-tip/0.8.0-alpha.1/d3-tip.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>
+
+    	
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
+
+    <style type="text/css">
+
+
+
+    </style>
+  </head>
+  <body>
+  
+  <div style="margin:1%">
+  
+  Select analysis:
+  
+  <select id="select_analysis" name="select_analysis" onchange="get_analysis(this)">
+    <option value ="-1" selected>None</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/all/merged_clusters_of_mutations.csv">Boston all</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/all/only_deletions.csv">Boston all deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/all/only_insertions.csv">Boston all insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/all/only_substitutions.csv">Boston all substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af/merged_clusters_of_mutations.csv">Boston AF(< 0.8)</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af/only_deletions.csv">Boston AF(< 0.8) deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af/only_insertions.csv">Boston AF(< 0.8) insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af/only_substitutions.csv">Boston AF(< 0.8) substitutions</option>
+    
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/clades/merged_clusters_of_mutations.csv">Boston clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/clades/only_deletions.csv">Boston clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/clades/only_insertions.csv">Boston clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/clades/only_substitutions.csv">Boston clades ex substitutions</option>
+    
+    
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af_clades/merged_clusters_of_mutations.csv">Boston AF(< 0.8) & clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af_clades/only_deletions.csv">Boston AF(< 0.8) & clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af_clades/only_insertions.csv">Boston AF(< 0.8) & clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Boston/af_clades/only_substitutions.csv">Boston AF(< 0.8) & clades ex substitutions</option>
+    
+    
+    
+    <!-- Pre-COGUK -->
+        
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/all/merged_clusters_of_mutations.csv">Pre-COG-UK all</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/all/only_deletions.csv">Pre-COG-UK all deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/all/only_insertions.csv">Pre-COG-UK all insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/all/only_substitutions.csv">Pre-COG-UK all substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af/merged_clusters_of_mutations.csv">Pre-COG-UK AF(< 0.8)</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af/only_deletions.csv">Pre-COG-UK AF(< 0.8) deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af/only_insertions.csv">Pre-COG-UK AF(< 0.8) insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af/only_substitutions.csv">Pre-COG-UK AF(< 0.8) substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/clades/merged_clusters_of_mutations.csv">Pre-COG-UK clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/clades/only_deletions.csv">Pre-COG-UK clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/clades/only_insertions.csv">Pre-COG-UK clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/clades/only_substitutions.csv">Pre-COG-UK clades ex substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af_clades/merged_clusters_of_mutations.csv">Pre-COG-UK AF(< 0.8) & clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af_clades/only_deletions.csv">Pre-COG-UK AF(< 0.8) & clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af_clades/only_insertions.csv">Pre-COG-UK AF(< 0.8) & clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Pre-COG-UK/af_clades/only_substitutions.csv">Pre-COG-UK AF(< 0.8) & clades ex substitutions</option>
+    
+    <!-- Post-COGUK -->
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/all/merged_clusters_of_mutations.csv">Post-COG-UK all</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/all/only_deletions.csv">Post-COG-UK all deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/all/only_insertions.csv">Post-COG-UK all insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/all/only_substitutions.csv">Post-COG-UK all substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af/merged_clusters_of_mutations.csv">Post-COG-UK AF(< 0.8)</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af/only_deletions.csv">Post-COG-UK AF(< 0.8) deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af/only_insertions.csv">Post-COG-UK AF(< 0.8) insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af/only_substitutions.csv">Post-COG-UK AF(< 0.8) substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/clades/merged_clusters_of_mutations.csv">Post-COG-UK clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/clades/only_deletions.csv">Post-COG-UK clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/clades/only_insertions.csv">Post-COG-UK clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/clades/only_substitutions.csv">Post-COG-UK clades ex substitutions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af_clades/merged_clusters_of_mutations.csv">Post-COG-UK AF(< 0.8) & clades ex</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af_clades/only_deletions.csv">Post-COG-UK AF(< 0.8) & clades ex deletions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af_clades/only_insertions.csv">Post-COG-UK AF(< 0.8) & clades ex insertions</option>
+    
+    <option value ="https://raw.githubusercontent.com/anuprulez/covid_vcf/sklearn/data/outputs/Post-COG-UK/af_clades/only_substitutions.csv">Post-COG-UK AF(< 0.8) & clades ex substitutions</option>
+    
+  </select>
+  
+  
+  Filter Min AF:
+  
+ 
+  <select id="filter_minaf">
+    <option value ="-1">None</option>
+    <option value ="greater_than_equal">Greater than equal to</option>
+    <option value ="less_than">Less than</option>
+  </select>
+  
+  <input id="txt_minAF" type="text">
+  <input id="btn_minAF" type="button" value="Apply MinAF" onclick="apply_minAF(this)">
+  
+  Filter Max AF:
+  
+  <select id="filter_maxaf">
+    <option value ="-1">None</option>
+    <option value ="greater_than_equal">Greater than equal to</option>
+    <option value ="less_than">Less than</option>
+  </select>
+  
+  <input id="txt_maxAF" type="text">
+  <input id="btn_maxAF" type="button" value="Apply MaxAF" onclick="apply_maxAF(this)">
+
+ <table id="specific_run_table" class="table table-striped table-bordered" style="width:95%; margin-top:1%">
+
+ </table>
+    
+        
+    <script type="text/javascript">
+    
+    global_data = [];
+    
+    function clearTable() {
+        $('#specific_run_table').empty();
+    }
+    
+    function apply_minAF(e) {
+        minAFOpe = $("#filter_minaf").val();
+        txtValMin = $("#txt_minAF").val();
+        col = "MinAF";
+        if (minAFOpe === "less_than") {
+            set_table(global_data, "<", txtValMin, col);
+        }
+        else if(minAFOpe === "greater_than_equal") {
+            set_table(global_data, ">=", txtValMin, col);
+        }
+    }
+    
+    function apply_maxAF(e) {
+        maxAFOpe = $("#filter_maxaf").val();
+        txtValMax = $("#txt_maxAF").val();
+        
+        col = "MaxAF";
+        console.log(maxAFOpe, txtValMax);
+        if (maxAFOpe === "less_than") {
+            set_table(global_data, "<", txtValMax, col);
+        }
+        else if(maxAFOpe === "greater_than_equal") {
+            set_table(global_data, ">=", txtValMax, col);
+        }
+    }
+
+    function set_table(data, operator, value, col) {
+        filteredData = [];
+        for(i=0; i< data.length; i++) {
+            af = data[i][col];
+            if (operator == "<") {
+                if (af < value) {
+                    filteredData.push(data[i])
+                }
+            }
+            else if (operator == ">=") {
+                if (af >= value) {
+                    filteredData.push(data[i])
+                }
+            }
+        }
+        const columns = ["REF","POS", "ALT", "MinAF", "MaxAF", "NumSamples", "MutationCluster"]
+        crateTable(filteredData, columns)
+    }
+        
+
+    function get_analysis(e) {
+      var path = e.value;
+      d3.csv(path)
+          .get(function(data) {
+              const columns = ["REF","POS", "ALT", "MinAF", "MaxAF", "NumSamples", "MutationCluster"]
+              global_data = data;
+              crateTable(data, columns)
+       });
+    }
+    
+    
+    
+let crateTable = function (data,columns) {
+    clearTable()
+    var table = d3.select('#specific_run_table')
+      var thead = table.append('thead')
+      var tbody = table.append('tbody')
+
+
+      thead.append('tr')
+        .selectAll('th')
+          .data(columns)
+          .enter()
+        .append('th')
+          .text(function (d) { return d })
+
+      var rows = tbody.selectAll('tr')
+          .data(data)
+          .enter()
+        .append('tr')
+
+      var cells = rows.selectAll('td')
+          .data(function(row) {
+              return columns.map(function (column) {
+                  return { column: column, value: row[column] }
+            })
+        })
+        .enter()
+      .append('td')
+        .text(function (d) { return d.value })
+
+    return table;
+  }
+	 
+    </script>
+  </div>
+  </body>
+</html>
