@@ -217,7 +217,7 @@
     
   </select>
   
-  <div id="filters_ele" style="display:none">
+  <div id="filters_ele" style="display:none; margin-top:1%">
   
   Filters:
  
@@ -243,7 +243,7 @@
 
   <div>
   
-  Number of rows: <label id="num_rows">0</label>
+  Number of rows: <label id="num_rows" style="margin-top:1%">0</label>
   
   </div>
   
@@ -251,7 +251,8 @@
   
   <div>
   
-  <input id="reset" type="button" onclick="reset(this)" value="Reset">
+  <input id="reset" type="button" onclick="reset(this)" value="Reset all" style="margin-top:1%;">
+  <input id="resetFilter" type="button" onclick="reset_filters(this)" value="Reset filters" style="margin-top:1%; display:none">
   
   </div>
 
@@ -276,6 +277,16 @@
         $("#select_analysis").val("-1");
         $("#num_rows").text("0");
         $("#filters_ele").hide();
+        $("#resetFilter").hide();
+        
+    }
+    
+    function reset_filters(e) {
+        $("#selectbox_operator").val("-1");
+        $("#txtbxFilter").val("");
+        createTable(global_data, global_columns);
+        $("#resetFilter").show();
+        $("#num_rows").text(global_data.length);
     }
 
     function filterBy(e, colName) {
@@ -340,7 +351,7 @@
                 }
             }
         }
-        crateTable(filteredData, cols);
+        createTable(filteredData, cols);
         $("#num_rows").text(filteredData.length);
     }
 
@@ -348,6 +359,7 @@
       var path = e.value;
       if (path !== "-1") {
           $("#filters_ele").show();
+          $("#resetFilter").show();
           d3.csv(path)
               .get(function(data) {
                   columns = data.columns;
@@ -357,7 +369,7 @@
                   }
                   global_data = data;
                   global_columns = columns;
-                  crateTable(data, columns);
+                  createTable(data, columns);
                   $("#num_rows").text(data.length);
             });
       }
@@ -367,7 +379,7 @@
       
     }
 
-let crateTable = function (data, columns) {
+let createTable = function (data, columns) {
     clearTable();
     var table = d3.select('#specific_run_table')
       var thead = table.append('thead')
